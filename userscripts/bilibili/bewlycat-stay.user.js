@@ -1,24 +1,16 @@
 // ==UserScript==
 // @name         BewlyCat for Stay
 // @namespace    https://github.com/keleus/BewlyCat
-// @version      1.6.6-stay.5
-// @description  BewlyCat 的 Safari/Stay 轻量兼容版，仅限个人非商业使用。
+// @version      1.6.6-stay.6
+// @description  BewlyCat 的 Safari/Stay 首页轻量兼容版，仅限个人非商业使用。
 // @author       Keleus; Stay compatibility port by Codex
 // @homepageURL  https://github.com/cth123456/script-library
 // @source       https://github.com/keleus/BewlyCat/commit/eb2f273365158c867cc0da39902cc50813318518
 // @downloadURL  https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/bilibili/bewlycat-stay.user.js
 // @updateURL    https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/bilibili/bewlycat-stay.user.js
 // @license      Custom License - personal study and non-commercial modification only
-// @match        *://www.bilibili.com/*
-// @match        *://search.bilibili.com/*
-// @match        *://t.bilibili.com/*
-// @match        *://space.bilibili.com/*
-// @match        *://message.bilibili.com/*
-// @match        *://member.bilibili.com/*
-// @match        *://account.bilibili.com/*
-// @match        *://www.hdslb.com/*
-// @match        *://passport.bilibili.com/*
-// @match        *://music.bilibili.com/*
+// @match        https://www.bilibili.com/
+// @match        https://www.bilibili.com/index.html
 // @run-at       document-start
 // @noframes
 // @grant        none
@@ -27,19 +19,16 @@
 (function () {
   "use strict";
 
-  var VERSION = "1.6.6-stay.5";
+  var VERSION = "1.6.6-stay.6";
   var PAYLOAD_URL =
-    globalThis.__BEWLYCAT_STAY_PAYLOAD_URL__ || "https://raw.githubusercontent.com/cth123456/script-library/e060d01637b83bda1e59bd080315c6d68c070e90/userscripts/bilibili/bewlycat-stay.payload.js?v=1.6.6-stay.5";
+    globalThis.__BEWLYCAT_STAY_PAYLOAD_URL__ || "https://raw.githubusercontent.com/cth123456/script-library/bb22eb198f343cca3afb5be7cc94df67fd8b2c4c/userscripts/bilibili/bewlycat-stay.payload.js?v=1.6.6-stay.6";
   var PAYLOAD_MARKER = "/* BewlyCat Stay payload " + VERSION + " */";
   var STORAGE_PREFIX = "__bewlycat_stay__:";
   var BOOT_ATTEMPT_KEY = "__bewlycat_stay_boot_attempt__";
   var ROOT_ATTRIBUTE = "data-bewlycat-stay-loader";
   var ready = false;
   var watchdog = null;
-  var timings = (globalThis.__BEWLYCAT_STAY_TIMINGS__ = {
-    loaderStart: performance.now(),
-    version: VERSION,
-  });
+  var timings;
 
   if (window.top !== window.self) return;
 
@@ -49,6 +38,14 @@
       (location.pathname === "/" || location.pathname === "/index.html")
     );
   }
+
+  // This Stay port only owns the root homepage. Never touch video/detail pages.
+  if (!isHomePage()) return;
+
+  timings = globalThis.__BEWLYCAT_STAY_TIMINGS__ = {
+    loaderStart: performance.now(),
+    version: VERSION,
+  };
 
   function readSettings() {
     try {
