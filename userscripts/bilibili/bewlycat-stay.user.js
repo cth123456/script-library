@@ -29,7 +29,7 @@
 
   var VERSION = "1.6.6-stay.5";
   var PAYLOAD_URL =
-    globalThis.__BEWLYCAT_STAY_PAYLOAD_URL__ || "https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/bilibili/bewlycat-stay.payload.js?v=1.6.6-stay.5";
+    globalThis.__BEWLYCAT_STAY_PAYLOAD_URL__ || "https://raw.githubusercontent.com/cth123456/script-library/e060d01637b83bda1e59bd080315c6d68c070e90/userscripts/bilibili/bewlycat-stay.payload.js?v=1.6.6-stay.5";
   var PAYLOAD_MARKER = "/* BewlyCat Stay payload " + VERSION + " */";
   var STORAGE_PREFIX = "__bewlycat_stay__:";
   var BOOT_ATTEMPT_KEY = "__bewlycat_stay_boot_attempt__";
