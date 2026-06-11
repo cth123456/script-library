@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BewlyCat for Stay
-// @namespace    https://github.com/cth123456/script-library
-// @version      1.6.6-stay.4
+// @namespace    https://github.com/keleus/BewlyCat
+// @version      1.6.6-stay.5
 // @description  BewlyCat 的 Safari/Stay 轻量兼容版，仅限个人非商业使用。
 // @author       Keleus; Stay compatibility port by Codex
 // @homepageURL  https://github.com/cth123456/script-library
@@ -27,9 +27,9 @@
 (function () {
   "use strict";
 
-  var VERSION = "1.6.6-stay.4";
+  var VERSION = "1.6.6-stay.5";
   var PAYLOAD_URL =
-    globalThis.__BEWLYCAT_STAY_PAYLOAD_URL__ || "https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/bilibili/bewlycat-stay.payload.js?v=1.6.6-stay.4";
+    globalThis.__BEWLYCAT_STAY_PAYLOAD_URL__ || "https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/bilibili/bewlycat-stay.payload.js?v=1.6.6-stay.5";
   var PAYLOAD_MARKER = "/* BewlyCat Stay payload " + VERSION + " */";
   var STORAGE_PREFIX = "__bewlycat_stay__:";
   var BOOT_ATTEMPT_KEY = "__bewlycat_stay_boot_attempt__";
@@ -50,15 +50,15 @@
     );
   }
 
-  function usesOriginalHomepage() {
+  function readSettings() {
     try {
       var stored = localStorage.getItem(STORAGE_PREFIX + "settings");
-      if (!stored) return false;
+      if (!stored) return {};
       stored = JSON.parse(stored);
       if (typeof stored === "string") stored = JSON.parse(stored);
-      return Boolean(stored && stored.useOriginalBilibiliHomepage);
+      return stored || {};
     } catch (error) {
-      return false;
+      return {};
     }
   }
 
@@ -282,13 +282,17 @@
     }
     globalThis.__BEWLYCAT_STAY_LOADER__ = VERSION;
 
-    var customHomepage = isHomePage() && !usesOriginalHomepage();
-    if (customHomepage) {
+    var settings = readSettings();
+    var customHomepage =
+      isHomePage() && !settings.useOriginalBilibiliHomepage;
+    if (customHomepage && !settings.useOriginalBilibiliTopBar) {
       try {
         await createCleanHomepage();
       } catch (error) {
         installFallbackShield();
       }
+    } else if (customHomepage) {
+      installFallbackShield();
     }
 
     window.addEventListener("bewlyStayVisible", markReady, { once: true });
