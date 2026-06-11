@@ -1,10 +1,10 @@
-/* BewlyCat Stay payload 1.6.6-stay.5 */
+/* BewlyCat Stay payload 1.6.6-stay.6 */
 (function () {
   "use strict";
   if (window.top !== window.self) return;
   if (globalThis.__BEWLYCAT_STAY_LOADED__) return;
   globalThis.__BEWLYCAT_STAY_LOADED__ = true;
-  globalThis.__BEWLYCAT_STAY_PAYLOAD_VERSION__ = "1.6.6-stay.5";
+  globalThis.__BEWLYCAT_STAY_PAYLOAD_VERSION__ = "1.6.6-stay.6";
 
 (function installBewlyCatStayRuntime() {
   "use strict";
