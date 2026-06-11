@@ -17,6 +17,8 @@
 
 - 文件：[`userscripts/bilibili/bewlycat-stay.user.js`](userscripts/bilibili/bewlycat-stay.user.js)
 - 类型：Safari Stay 用户脚本
+- 安装：只需导入上面的 `.user.js` 启动器，主体文件会自动下载并缓存
+- 主体：[`userscripts/bilibili/bewlycat-stay.payload.js`](userscripts/bilibili/bewlycat-stay.payload.js)
 - 上游项目：[keleus/BewlyCat](https://github.com/keleus/BewlyCat)
 - 基于提交：`eb2f273365158c867cc0da39902cc50813318518`
 - 授权：遵循 [`BEWLYCAT-LICENSE.txt`](userscripts/bilibili/BEWLYCAT-LICENSE.txt)，仅限个人、学习和非商业用途
