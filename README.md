@@ -16,13 +16,11 @@
 ### BewlyCat for Stay
 
 - 文件：[`userscripts/bilibili/bewlycat-stay.user.js`](userscripts/bilibili/bewlycat-stay.user.js)
-- 类型：Safari Stay 完整 BewlyCat 首页用户脚本
-- 范围：只在 Bilibili 根首页运行完整 BewlyCat；视频、番剧、搜索、空间等页面保持 Bilibili 原版
-- 隔离：离开首页时强制完整页面跳转，避免 BewlyCat 运行环境进入视频详情页
-- 性能：单文件本地执行，不再远程下载 payload，不使用自动刷新恢复
-- 上游项目：[shiinayane/BewlyCat-Safari](https://github.com/shiinayane/BewlyCat-Safari)
-- 基于版本：BewlyCat Safari `1.6.7`，Stay 脚本版本 `2.3.0`
-- 使用提示：请停用旧 BewlyCat Safari 扩展及旧版 Stay 脚本，避免重复注入
+- 类型：Safari Stay BewlyCat 用户脚本
+- 恢复版本：`1.6.6-stay.2`
+- 备份时间：2026-06-08 19:17
+- 上游项目：[keleus/BewlyCat](https://github.com/keleus/BewlyCat)
+- 基于提交：`eb2f273365158c867cc0da39902cc50813318518`
 - 授权：遵循 [`BEWLYCAT-LICENSE.txt`](userscripts/bilibili/BEWLYCAT-LICENSE.txt)，仅限个人、学习和非商业用途
 
 ## 说明
