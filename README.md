@@ -16,9 +16,9 @@
 ### BewlyCat for Stay
 
 - 文件：[`userscripts/bilibili/bewlycat-stay.user.js`](userscripts/bilibili/bewlycat-stay.user.js)
-- 类型：Safari Stay 轻量首页用户脚本
-- 范围：只美化 Bilibili 根首页，视频、搜索、空间等页面保持原版
-- 实现：保留 BewlyCat 的紧凑顶栏、推荐标签、三列视频流、明暗主题和右侧 Dock，不再加载完整 BewlyCat 应用
+- 类型：Safari Stay 完整 BewlyCat 首页用户脚本
+- 范围：只在 Bilibili 根首页运行完整 BewlyCat；视频、番剧、搜索、空间等页面保持 Bilibili 原版
+- 隔离：离开首页时强制完整页面跳转，避免 BewlyCat 运行环境进入视频详情页
 - 上游项目：[keleus/BewlyCat](https://github.com/keleus/BewlyCat)
 - 基于提交：`eb2f273365158c867cc0da39902cc50813318518`
 - 授权：遵循 [`BEWLYCAT-LICENSE.txt`](userscripts/bilibili/BEWLYCAT-LICENSE.txt)，仅限个人、学习和非商业用途
