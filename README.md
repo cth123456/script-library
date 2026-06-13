@@ -17,8 +17,9 @@
 
 - 文件：[`userscripts/bilibili/bewlycat-stay.user.js`](userscripts/bilibili/bewlycat-stay.user.js)
 - 类型：Safari Stay BewlyCat 用户脚本
-- 恢复版本：`1.6.6-stay.2`
-- 备份时间：2026-06-08 19:17
+- 稳定版本：`1.6.6-stay.3`
+- 首页：保留 BewlyCat 1.6.6 原版布局，并修复 Stay 延迟注入和 CSS 加载白屏
+- 视频页：强制完整导航到哔哩哔哩原生详情页，不注入 BewlyCat
 - 上游项目：[keleus/BewlyCat](https://github.com/keleus/BewlyCat)
 - 基于提交：`eb2f273365158c867cc0da39902cc50813318518`
 - 授权：遵循 [`BEWLYCAT-LICENSE.txt`](userscripts/bilibili/BEWLYCAT-LICENSE.txt)，仅限个人、学习和非商业用途
