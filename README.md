@@ -29,6 +29,7 @@
 - 类型：Safari Stay 下载桥接脚本
 - 用法：按住 `Option/Alt` 点击链接，或点击网页自带的下载链接
 - 处理顺序：Motrix RPC 优先；连接失败、认证失败或任务被立即拒绝时自动改用 Safari 下载
+- 兼容：按 Stay 2.9.20 的内置解析器和 GM API 实现验证，不使用 Stay 不支持的 `@connect`
 - 配置：首次下载时输入 Motrix 设置中的 RPC 密钥，密钥仅保存于 Stay 本地
 
 ## 说明

@@ -1,21 +1,22 @@
 // ==UserScript==
 // @name         Motrix Safari Download Bridge
+// @name:zh-CN   Motrix Safari 下载桥
 // @namespace    https://github.com/cth123456/script-library
-// @version      1.0.0
-// @description  Send downloads to Motrix first, then fall back to Safari when Motrix rejects the task.
+// @version      1.1.0
+// @description  Send links to Motrix first and let Safari handle the original link if Motrix rejects it.
+// @description:zh-CN  优先将链接发送到 Motrix，失败后由 Safari 原生处理。
 // @author       cth123456
+// @homepageURL  https://github.com/cth123456/script-library
+// @updateURL    https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/downloaders/motrix-safari-bridge.user.js
+// @downloadURL  https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/downloaders/motrix-safari-bridge.user.js
 // @match        http://*/*
 // @match        https://*/*
-// @run-at       document-start
+// @run-at       document-end
 // @noframes
 // @grant        GM_xmlhttpRequest
-// @grant        GM_download
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
-// @grant        GM_notification
-// @connect      127.0.0.1
-// @connect      localhost
 // ==/UserScript==
 
 (function () {
@@ -50,21 +51,6 @@
       return Promise.resolve(api.call(typeof GM === "object" ? GM : null, key, value));
     } catch (error) {
       return Promise.reject(error);
-    }
-  }
-
-  function notify(text) {
-    var api =
-      typeof GM_notification === "function" ? GM_notification : getModernGM("notification");
-    if (!api) return;
-    try {
-      api.call(typeof GM === "object" ? GM : null, {
-        title: "下载助手",
-        text: text,
-        timeout: 3500,
-      });
-    } catch (error) {
-      // The in-page toast remains available if Stay does not support notifications.
     }
   }
 
@@ -256,8 +242,7 @@
     var anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = filename || "";
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
+    anchor.target = "_self";
     anchor.style.display = "none";
     (document.body || document.documentElement).appendChild(anchor);
     anchor.click();
@@ -267,38 +252,10 @@
   }
 
   function safariDownload(url, filename, reason) {
-    var api = typeof GM_download === "function" ? GM_download : getModernGM("download");
-    var usedFallback = false;
-
-    function fallback() {
-      if (usedFallback) return;
-      usedFallback = true;
-      anchorDownload(url, filename);
-    }
-
-    showToast("Motrix 失败，已自动改用 Safari 下载", "error");
-    notify("Motrix 失败，已改用 Safari 下载" + (reason ? "：" + reason : ""));
-
-    if (!api || !/^https?:/i.test(url)) {
-      fallback();
-      return;
-    }
-
-    try {
-      var result = api.call(typeof GM === "object" ? GM : null, {
-        url: url,
-        name: filename || undefined,
-        saveAs: false,
-        headers: {
-          Referer: location.href,
-        },
-        onerror: fallback,
-        ontimeout: fallback,
-      });
-      if (result && typeof result.catch === "function") result.catch(fallback);
-    } catch (error) {
-      fallback();
-    }
+    var message = "Motrix 失败，已交给 Safari";
+    if (reason) message += "：" + reason;
+    showToast(message, "error");
+    anchorDownload(url, filename);
   }
 
   async function startDownload(rawUrl, preferredName) {
@@ -320,7 +277,6 @@
     try {
       var gid = await submitToMotrix(url, filename);
       showToast("Motrix 已接收任务：" + gid.slice(0, 8), "success");
-      notify("Motrix 已接收下载任务");
     } catch (error) {
       safariDownload(url, filename, error && error.message);
     }
@@ -335,7 +291,7 @@
   document.addEventListener(
     "click",
     function (event) {
-      if (event.defaultPrevented || event.button !== 0) return;
+      if (!event.isTrusted || event.defaultPrevented || event.button !== 0) return;
       var anchor = linkFromEvent(event);
       if (!anchor) return;
 
