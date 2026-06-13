@@ -23,6 +23,14 @@
 - 基于提交：`eb2f273365158c867cc0da39902cc50813318518`
 - 授权：遵循 [`BEWLYCAT-LICENSE.txt`](userscripts/bilibili/BEWLYCAT-LICENSE.txt)，仅限个人、学习和非商业用途
 
+### Motrix Safari Download Bridge
+
+- 文件：[`userscripts/downloaders/motrix-safari-bridge.user.js`](userscripts/downloaders/motrix-safari-bridge.user.js)
+- 类型：Safari Stay 下载桥接脚本
+- 用法：按住 `Option/Alt` 点击链接，或点击网页自带的下载链接
+- 处理顺序：Motrix RPC 优先；连接失败、认证失败或任务被立即拒绝时自动改用 Safari 下载
+- 配置：首次下载时输入 Motrix 设置中的 RPC 密钥，密钥仅保存于 Stay 本地
+
 ## 说明
 
 - 仓库中的稳定文件名不会随版本变化，便于使用固定 Raw URL。
