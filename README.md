@@ -13,6 +13,15 @@
 
 ## Userscripts
 
+### WPS Office Daily Tasks
+
+- 文件：[`userscripts/wps/wps.js`](userscripts/wps/wps.js)
+- Cookie 抓取：[`userscripts/wps/wps.cookie.js`](userscripts/wps/wps.cookie.js)
+- 类型：Loon/Surge/Quantumult X 签到与福利中心任务脚本
+- 功能：每日签到、打卡领会员、天天抽奖、会员试用申请、限量爆款领取、小程序打卡
+- 上游项目：[MaYIHEI/paperclip app/wps](https://github.com/MaYIHEI/paperclip/tree/main/app/wps)
+- 注意：`wps_sid` 属于登录凭据，仅用于本人账号，不要公开日志或截图
+
 ### BewlyCat for Stay
 
 - 文件：[`userscripts/bilibili/bewlycat-stay.user.js`](userscripts/bilibili/bewlycat-stay.user.js)
