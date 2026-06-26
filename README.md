@@ -8,9 +8,20 @@
 
 - 文件：[`forward-widgets/hanime/hanime.js`](forward-widgets/hanime/hanime.js)
 - 类型：ForwardWidget 视频模块
-- 版本：`1.2.0`
+- 版本：`1.2.5`
 - 功能：按官网影片分类作为入口，进入分类后在右上角选择排序、时间范围、时长，支持搜索、详情和多画质播放资源
 - 播放：从播放页和下载页双路提取 MP4，并附带播放请求头
+- 内容提示：包含成人内容，仅供成年人使用
+
+### 成人聚合搜索
+
+- 文件：[`forward-widgets/adult-aggregate/adult-aggregate.js`](forward-widgets/adult-aggregate/adult-aggregate.js)
+- 类型：ForwardWidget 聚合搜索与播放资源模块
+- 版本：`0.1.0`
+- 功能：聚合服务器资源、Hanime1、MissAV、Jable 搜索结果，播放时优先按番号/标题匹配服务器资源
+- 来源：支持全部、服务器、Hanime1、MissAV、Jable 单独筛选
+- 服务器 API：在模块全局参数填写 `服务器搜索 API`，模块会追加 `q`、`code`、`title`、`limit` 参数并读取 JSON
+- 返回格式：支持数组、`results`、`items`、`data`、`result.items`，单项建议包含 `title`、`videoUrl`、`coverUrl`、`quality`、`code`
 - 内容提示：包含成人内容，仅供成年人使用
 
 ## Userscripts
