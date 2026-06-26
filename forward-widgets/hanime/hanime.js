@@ -1,7 +1,7 @@
 WidgetMetadata = {
   id: "forward.hanime.tv",
   title: "Hanime1",
-  version: "1.0.0",
+  version: "1.1.0",
   requiredVersion: "0.0.1",
   description:
     "Hanime1.me 成人内容模块。提供官网标题、分类、搜索、详情和支持拖动的多画质 MP4 播放资源。",
@@ -28,6 +28,466 @@ WidgetMetadata = {
       params: [{ name: "page", title: "页码", type: "page" }],
     },
     {
+      id: "watchingNow",
+      title: "大家都在看",
+      functionName: "loadWatchingNow",
+      cacheDuration: 180,
+      requiresWebView: false,
+      params: [{ name: "page", title: "页码", type: "page" }],
+    },
+    {
+      id: "dailyRank",
+      title: "本日排行",
+      functionName: "loadDailyRank",
+      cacheDuration: 300,
+      requiresWebView: false,
+      params: [{ name: "page", title: "页码", type: "page" }],
+    },
+    {
+      id: "weeklyRank",
+      title: "本周热门",
+      functionName: "loadWeeklyRank",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [{ name: "page", title: "页码", type: "page" }],
+    },
+    {
+      id: "monthlyRank",
+      title: "本月热门",
+      functionName: "loadMonthlyRank",
+      cacheDuration: 900,
+      requiresWebView: false,
+      params: [{ name: "page", title: "页码", type: "page" }],
+    },
+    {
+      id: "mostViewed",
+      title: "观看最多",
+      functionName: "loadMostViewed",
+      cacheDuration: 900,
+      requiresWebView: false,
+      params: [
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+            { title: "全部", value: "" },
+            { title: "过去 24 小时", value: "過去 24 小時" },
+            { title: "过去 2 天", value: "過去 2 天" },
+            { title: "过去 1 周", value: "過去 1 週" },
+            { title: "过去 1 个月", value: "過去 1 個月" },
+            { title: "过去 3 个月", value: "過去 3 個月" },
+            { title: "过去 1 年", value: "過去 1 年" },
+          ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "topRated",
+      title: "好评最高",
+      functionName: "loadTopRated",
+      cacheDuration: 900,
+      requiresWebView: false,
+      params: [
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+            { title: "全部", value: "" },
+            { title: "过去 24 小时", value: "過去 24 小時" },
+            { title: "过去 2 天", value: "過去 2 天" },
+            { title: "过去 1 周", value: "過去 1 週" },
+            { title: "过去 1 个月", value: "過去 1 個月" },
+            { title: "过去 3 个月", value: "過去 3 個月" },
+            { title: "过去 1 年", value: "過去 1 年" },
+          ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genreHentai",
+      title: "里番",
+      functionName: "loadGenreHentai",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genreShort",
+      title: "泡面番",
+      functionName: "loadGenreShort",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genreMotionAnime",
+      title: "Motion Anime",
+      functionName: "loadGenreMotionAnime",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genre3dcg",
+      title: "3DCG",
+      functionName: "loadGenre3dcg",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genre25d",
+      title: "2.5D",
+      functionName: "loadGenre25d",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genre2d",
+      title: "2D 动画",
+      functionName: "loadGenre2d",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genreAi",
+      title: "AI 生成",
+      functionName: "loadGenreAi",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genreMmd",
+      title: "MMD",
+      functionName: "loadGenreMmd",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
+      id: "genreCosplay",
+      title: "Cosplay",
+      functionName: "loadGenreCosplay",
+      cacheDuration: 600,
+      requiresWebView: false,
+      params: [
+        {
+          name: "sort",
+          title: "排序",
+          type: "enumeration",
+          value: "最新上傳",
+          enumOptions: [
+                      { title: "最新上市", value: "最新上市" },
+                      { title: "最新上传", value: "最新上傳" },
+                      { title: "本日排行", value: "本日排行" },
+                      { title: "本周排行", value: "本週排行" },
+                      { title: "本月排行", value: "本月排行" },
+                      { title: "观看次数", value: "觀看次數" },
+                      { title: "好评比例", value: "讚好比例" },
+                      { title: "时长最长", value: "時長最長" },
+                      { title: "他们在看", value: "他們在看" },
+                    ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+                      { title: "全部", value: "" },
+                      { title: "过去 24 小时", value: "過去 24 小時" },
+                      { title: "过去 2 天", value: "過去 2 天" },
+                      { title: "过去 1 周", value: "過去 1 週" },
+                      { title: "过去 1 个月", value: "過去 1 個月" },
+                      { title: "过去 3 个月", value: "過去 3 個月" },
+                      { title: "过去 1 年", value: "過去 1 年" },
+                    ],
+        },
+        { name: "page", title: "页码", type: "page" },
+      ],
+    },
+    {
       id: "browse",
       title: "分类浏览",
       functionName: "loadBrowse",
@@ -38,7 +498,7 @@ WidgetMetadata = {
           name: "genre",
           title: "影片类型",
           type: "enumeration",
-          value: "裏番",
+          value: "",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "里番", value: "裏番" },
@@ -56,7 +516,7 @@ WidgetMetadata = {
           name: "sort",
           title: "排序",
           type: "enumeration",
-          value: "最新上市",
+          value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -67,6 +527,38 @@ WidgetMetadata = {
             { title: "好评比例", value: "讚好比例" },
             { title: "时长最长", value: "時長最長" },
             { title: "他们在看", value: "他們在看" },
+          ],
+        },
+        {
+          name: "date",
+          title: "时间范围",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+            { title: "全部", value: "" },
+            { title: "过去 24 小时", value: "過去 24 小時" },
+            { title: "过去 2 天", value: "過去 2 天" },
+            { title: "过去 1 周", value: "過去 1 週" },
+            { title: "过去 1 个月", value: "過去 1 個月" },
+            { title: "过去 3 个月", value: "過去 3 個月" },
+            { title: "过去 1 年", value: "過去 1 年" },
+          ],
+        },
+        {
+          name: "duration",
+          title: "时长",
+          type: "enumeration",
+          value: "",
+          enumOptions: [
+            { title: "全部", value: "" },
+            { title: "1 分钟以上", value: "1 分鐘 +" },
+            { title: "5 分钟以上", value: "5 分鐘 +" },
+            { title: "10 分钟以上", value: "10 分鐘 +" },
+            { title: "20 分钟以上", value: "20 分鐘 +" },
+            { title: "30 分钟以上", value: "30 分鐘 +" },
+            { title: "60 分钟以上", value: "60 分鐘 +" },
+            { title: "0-10 分钟", value: "0 - 10 分鐘" },
+            { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
         { name: "page", title: "页码", type: "page" },
@@ -105,6 +597,14 @@ var HANIME1_READER_HEADERS = {
   "X-Return-Format": "html",
 };
 var HANIME1_PAGE_CACHE = {};
+
+function mediaHeaders(id) {
+  return {
+    Referer: HANIME1_SITE + "/watch?v=" + encodeURIComponent(String(id || "")),
+    Origin: HANIME1_SITE,
+    "User-Agent": HANIME1_HEADERS["User-Agent"],
+  };
+}
 
 function decodeHtml(value) {
   return String(value || "")
@@ -226,6 +726,11 @@ function queryPath(values) {
   return "/search" + (parts.length ? "?" + parts.join("&") : "");
 }
 
+function normalizeQueryValue(value) {
+  value = String(value || "").trim();
+  return value === "全部" ? "" : value;
+}
+
 function extractVideoId(value) {
   var text = String(value || "").trim();
   if (!text) return "";
@@ -317,6 +822,7 @@ function parseVideoCards(html) {
       duration: time.duration,
       durationText: time.durationText,
       link: "hanime1:" + id,
+      customHeaders: mediaHeaders(id),
     });
   }
 
@@ -326,6 +832,25 @@ function parseVideoCards(html) {
 async function fetchVideoList(values) {
   var html = await fetchHtml(queryPath(values), false);
   return parseVideoCards(html);
+}
+
+function listValues(params, extra) {
+  params = params || {};
+  var values = {
+    sort: normalizeQueryValue(params.sort || (extra && extra.sort)),
+    genre: normalizeQueryValue(params.genre || (extra && extra.genre)),
+    date: normalizeQueryValue(params.date || (extra && extra.date)),
+    duration: normalizeQueryValue(params.duration || (extra && extra.duration)),
+    page: Number(params.page || 1),
+  };
+  if (extra) {
+    for (var key in extra) {
+      if (values[key] === undefined || values[key] === "") {
+        values[key] = normalizeQueryValue(extra[key]);
+      }
+    }
+  }
+  return values;
 }
 
 async function loadLatestRelease(params) {
@@ -356,6 +881,70 @@ async function loadLatestUpload(params) {
   });
 }
 
+async function loadWatchingNow(params) {
+  return fetchVideoList(listValues(params, { sort: "他們在看" }));
+}
+
+async function loadDailyRank(params) {
+  return fetchVideoList(listValues(params, { sort: "本日排行" }));
+}
+
+async function loadWeeklyRank(params) {
+  return fetchVideoList(listValues(params, { sort: "本週排行" }));
+}
+
+async function loadMonthlyRank(params) {
+  return fetchVideoList(listValues(params, { sort: "本月排行" }));
+}
+
+async function loadMostViewed(params) {
+  return fetchVideoList(listValues(params, { sort: "觀看次數" }));
+}
+
+async function loadTopRated(params) {
+  return fetchVideoList(listValues(params, { sort: "讚好比例" }));
+}
+
+async function loadGenre(genre, params) {
+  return fetchVideoList(listValues(params, { genre: genre, sort: "最新上傳" }));
+}
+
+async function loadGenreHentai(params) {
+  return loadGenre("裏番", params);
+}
+
+async function loadGenreShort(params) {
+  return loadGenre("泡麵番", params);
+}
+
+async function loadGenreMotionAnime(params) {
+  return loadGenre("Motion Anime", params);
+}
+
+async function loadGenre3dcg(params) {
+  return loadGenre("3DCG", params);
+}
+
+async function loadGenre25d(params) {
+  return loadGenre("2.5D", params);
+}
+
+async function loadGenre2d(params) {
+  return loadGenre("2D動畫", params);
+}
+
+async function loadGenreAi(params) {
+  return loadGenre("AI生成", params);
+}
+
+async function loadGenreMmd(params) {
+  return loadGenre("MMD", params);
+}
+
+async function loadGenreCosplay(params) {
+  return loadGenre("Cosplay", params);
+}
+
 async function loadBrowse(params) {
   params = params || {};
   var genre = String(params.genreId || params.genre || "");
@@ -363,15 +952,13 @@ async function loadBrowse(params) {
   if (genre.indexOf("tag:") === 0) {
     return fetchVideoList({
       "tags[]": genre.slice(4),
-      sort: params.sort || "最新上市",
+      sort: normalizeQueryValue(params.sort || "最新上市"),
+      date: normalizeQueryValue(params.date),
+      duration: normalizeQueryValue(params.duration),
       page: Number(params.page || 1),
     });
   }
-  return fetchVideoList({
-    genre: genre,
-    sort: params.sort || "最新上市",
-    page: Number(params.page || 1),
-  });
+  return fetchVideoList(listValues(params, { genre: genre, sort: "最新上市" }));
 }
 
 async function search(params) {
@@ -387,18 +974,20 @@ async function search(params) {
 function parseSources(html) {
   var results = [];
   var seen = {};
-  var pattern = /<(?:source|a)\b[^>]*>/gi;
+  var pattern = /<(?:source|a|link)\b[^>]*>/gi;
   var match;
-  while ((match = pattern.exec(String(html || "")))) {
-    var tag = match[0];
-    var url = attributeValue(tag, "data-url") || attributeValue(tag, "src");
-    if (!url || !/^https:\/\/vdownload\.hembed\.com\/.+\.mp4\?/i.test(url)) {
-      continue;
+  function addSource(url, qualityHint) {
+    url = decodeHtml(String(url || ""))
+      .replace(/\\\//g, "/")
+      .replace(/&amp;/g, "&")
+      .trim();
+    if (!/^https:\/\/vdownload\.hembed\.com\/.+\.mp4(?:\?|$)/i.test(url)) {
+      return;
     }
-    if (seen[url]) continue;
+    if (seen[url]) return;
 
     var quality =
-      attributeValue(tag, "size") ||
+      qualityHint ||
       firstMatch(url, /-(\d{3,4})p?\.mp4/i) ||
       "MP4";
     quality = String(quality).replace(/p$/i, "");
@@ -409,13 +998,30 @@ function parseSources(html) {
     });
   }
 
+  while ((match = pattern.exec(String(html || "")))) {
+    var tag = match[0];
+    addSource(
+      attributeValue(tag, "data-url") ||
+        attributeValue(tag, "src") ||
+        attributeValue(tag, "href"),
+      attributeValue(tag, "size")
+    );
+  }
+
+  var urlPattern =
+    /https:\\?\/\\?\/vdownload\.hembed\.com\\?\/[^"' <>)]+?\.mp4(?:\?[^"' <>)]+)?/gi;
+  while ((match = urlPattern.exec(String(html || "")))) {
+    addSource(match[0], "");
+  }
+
   results.sort(function (a, b) {
     return Number(b.quality || 0) - Number(a.quality || 0);
   });
   return results;
 }
 
-function resourcesFromSources(sources) {
+function resourcesFromSources(sources, id) {
+  var headers = mediaHeaders(id);
   return (sources || []).map(function (source) {
     var quality = /^\d+$/.test(String(source.quality))
       ? source.quality + "p"
@@ -424,6 +1030,8 @@ function resourcesFromSources(sources) {
       name: "Hanime1 " + quality,
       description: quality + " | MP4 | 支持拖动进度",
       url: source.url,
+      headers: headers,
+      customHeaders: headers,
     };
   });
 }
@@ -555,7 +1163,13 @@ async function loadDetail(link) {
   var title = detailTitle(html);
   var poster = detailPoster(html);
   var sources = parseSources(html);
+  if (!sources.length) {
+    var downloadHtml = await fetchHtml("/download?v=" + encodeURIComponent(id), true);
+    sources = parseSources(downloadHtml);
+    if (!poster) poster = detailPoster(downloadHtml);
+  }
   var time = detailDuration(html);
+  var headers = mediaHeaders(id);
   var item = {
     id: "hanime1:" + id,
     type: "url",
@@ -576,17 +1190,29 @@ async function loadDetail(link) {
     relatedItems: relatedVideos(html, id),
     link: "hanime1:" + id,
     playerType: "system",
+    customHeaders: headers,
   };
-  if (sources.length) item.videoUrl = sources[0].url;
+  if (sources.length) {
+    item.videoUrl = sources[0].url;
+    item.trailers = [{ coverUrl: poster, url: sources[0].url }];
+  }
   return item;
 }
 
 async function loadResource(params) {
   params = params || {};
+  if (params.videoUrl || params.url) {
+    return resourcesFromSources(
+      [{ quality: "MP4", url: params.videoUrl || params.url }],
+      extractVideoId(params.link) || extractVideoId(params.id)
+    );
+  }
   var id =
     extractVideoId(params.link) ||
     extractVideoId(params.id) ||
-    extractVideoId(params.episode);
+    extractVideoId(params.episode) ||
+    extractVideoId(params.episodeId) ||
+    extractVideoId(params.tmdbId);
   if (!id) return [];
 
   var html = await fetchHtml("/watch?v=" + encodeURIComponent(id), true);
@@ -595,5 +1221,5 @@ async function loadResource(params) {
     html = await fetchHtml("/download?v=" + encodeURIComponent(id), true);
     sources = parseSources(html);
   }
-  return resourcesFromSources(sources);
+  return resourcesFromSources(sources, id);
 }

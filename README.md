@@ -8,7 +8,9 @@
 
 - 文件：[`forward-widgets/hanime/hanime.js`](forward-widgets/hanime/hanime.js)
 - 类型：ForwardWidget 视频模块
-- 功能：中文官网标题、分类、搜索、详情和多画质播放资源
+- 版本：`1.1.0`
+- 功能：官网分类、大家都在看、本日/本周/本月排行、搜索、详情和多画质播放资源
+- 播放：从播放页和下载页双路提取 MP4，并附带播放请求头
 - 内容提示：包含成人内容，仅供成年人使用
 
 ## Userscripts
