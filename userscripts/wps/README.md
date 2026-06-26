@@ -4,8 +4,17 @@ Source: https://github.com/MaYIHEI/paperclip/tree/main/app/wps
 
 Mirrored files:
 
+- `wps-loon.plugin`: Single Loon plugin entry. It includes MITM, cookie capture, and the daily cron task.
 - `wps.cookie.js`: Loon/Surge/Quantumult X request script for capturing `wps_sid` from WPS activity requests.
 - `wps.js`: Daily cron script for WPS sign-in and welfare-center tasks.
+
+Recommended Loon plugin:
+
+```text
+https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/wps/wps-loon.plugin
+```
+
+Cookie capture is controlled by the plugin argument `Cookie 抓取` and requires Loon 3.2.1 build 733 or newer. Enable it only when refreshing `wps_sid`, then turn it off after the "WPS Cookie 获取成功" notification if you do not want request interception to stay active.
 
 Loon example:
 

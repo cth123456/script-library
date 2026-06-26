@@ -17,8 +17,10 @@
 
 - 文件：[`userscripts/wps/wps.js`](userscripts/wps/wps.js)
 - Cookie 抓取：[`userscripts/wps/wps.cookie.js`](userscripts/wps/wps.cookie.js)
+- Loon 插件：[`userscripts/wps/wps-loon.plugin`](userscripts/wps/wps-loon.plugin)
 - 类型：Loon/Surge/Quantumult X 签到与福利中心任务脚本
 - 功能：每日签到、打卡领会员、天天抽奖、会员试用申请、限量爆款领取、小程序打卡
+- Loon 用法：推荐导入单个插件，`Cookie 抓取` 可在插件参数里单独开关
 - 上游项目：[MaYIHEI/paperclip app/wps](https://github.com/MaYIHEI/paperclip/tree/main/app/wps)
 - 注意：`wps_sid` 属于登录凭据，仅用于本人账号，不要公开日志或截图
 
