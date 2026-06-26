@@ -1,7 +1,7 @@
 WidgetMetadata = {
   id: "forward.hanime.tv",
   title: "Hanime1",
-  version: "1.2.2",
+  version: "1.2.3",
   requiredVersion: "0.0.1",
   description:
     "Hanime1.me 成人内容模块。提供官网标题、分类、搜索、详情和支持拖动的多画质 MP4 播放资源。",
@@ -16,6 +16,7 @@ WidgetMetadata = {
       title: "全部影片",
       functionName: "loadAll",
       cacheDuration: 300,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -23,7 +24,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -41,7 +41,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -57,7 +56,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -78,6 +76,7 @@ WidgetMetadata = {
       title: "里番",
       functionName: "loadGenreHentai",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -85,7 +84,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -103,7 +101,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -119,7 +116,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -140,6 +136,7 @@ WidgetMetadata = {
       title: "泡面番",
       functionName: "loadGenreShort",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -147,7 +144,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -165,7 +161,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -181,7 +176,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -202,6 +196,7 @@ WidgetMetadata = {
       title: "Motion Anime",
       functionName: "loadGenreMotionAnime",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -209,7 +204,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -227,7 +221,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -243,7 +236,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -264,6 +256,7 @@ WidgetMetadata = {
       title: "3DCG",
       functionName: "loadGenre3dcg",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -271,7 +264,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -289,7 +281,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -305,7 +296,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -326,6 +316,7 @@ WidgetMetadata = {
       title: "2.5D",
       functionName: "loadGenre25d",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -333,7 +324,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -351,7 +341,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -367,7 +356,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -388,6 +376,7 @@ WidgetMetadata = {
       title: "2D 动画",
       functionName: "loadGenre2d",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -395,7 +384,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -413,7 +401,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -429,7 +416,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -450,6 +436,7 @@ WidgetMetadata = {
       title: "AI 生成",
       functionName: "loadGenreAi",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -457,7 +444,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -475,7 +461,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -491,7 +476,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -512,6 +496,7 @@ WidgetMetadata = {
       title: "MMD",
       functionName: "loadGenreMmd",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -519,7 +504,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -537,7 +521,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -553,7 +536,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -574,6 +556,7 @@ WidgetMetadata = {
       title: "Cosplay",
       functionName: "loadGenreCosplay",
       cacheDuration: 600,
+      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -581,7 +564,6 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
-          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -599,7 +581,6 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -615,7 +596,6 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
-          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
