@@ -1,7 +1,7 @@
 WidgetMetadata = {
   id: "forward.hanime.tv",
   title: "Hanime1",
-  version: "1.2.4",
+  version: "1.2.5",
   requiredVersion: "0.0.1",
   description:
     "Hanime1.me 成人内容模块。提供官网标题、分类、搜索、详情和支持拖动的多画质 MP4 播放资源。",
@@ -13,14 +13,16 @@ WidgetMetadata = {
   modules: [
     {
       title: "全部影片",
-      functionName: "loadAll",
-      cacheDuration: 300,
+      description: "全部影片",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 300,
       params: [
         {
-          name: "sort",
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -38,6 +40,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -53,6 +56,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -66,19 +70,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "里番",
-      functionName: "loadGenreHentai",
-      cacheDuration: 600,
+      description: "里番",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "裏番",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -96,6 +109,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -111,6 +125,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -124,19 +139,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "泡面番",
-      functionName: "loadGenreShort",
-      cacheDuration: 600,
+      description: "泡面番",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "泡麵番",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -154,6 +178,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -169,6 +194,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -182,19 +208,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "Motion Anime",
-      functionName: "loadGenreMotionAnime",
-      cacheDuration: 600,
+      description: "Motion Anime",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "Motion Anime",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -212,6 +247,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -227,6 +263,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -240,19 +277,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "3DCG",
-      functionName: "loadGenre3dcg",
-      cacheDuration: 600,
+      description: "3DCG",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "3DCG",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -270,6 +316,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -285,6 +332,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -298,19 +346,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "2.5D",
-      functionName: "loadGenre25d",
-      cacheDuration: 600,
+      description: "2.5D",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "2.5D",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -328,6 +385,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -343,6 +401,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -356,19 +415,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "2D 动画",
-      functionName: "loadGenre2d",
-      cacheDuration: 600,
+      description: "2D 动画",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "2D動畫",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -386,6 +454,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -401,6 +470,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -414,19 +484,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "AI 生成",
-      functionName: "loadGenreAi",
-      cacheDuration: 600,
+      description: "AI 生成",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "AI生成",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -444,6 +523,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -459,6 +539,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -472,19 +553,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "MMD",
-      functionName: "loadGenreMmd",
-      cacheDuration: 600,
+      description: "MMD",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "MMD",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -502,6 +592,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -517,6 +608,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -530,19 +622,28 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
       title: "Cosplay",
-      functionName: "loadGenreCosplay",
-      cacheDuration: 600,
+      description: "Cosplay",
       requiresWebView: false,
+      functionName: "loadPage",
+      cacheDuration: 600,
       params: [
         {
-          name: "sort",
+          name: "genre",
+          title: "影片类型",
+          type: "constant",
+          description: "影片类型",
+          value: "Cosplay",
+        },
+        {
+          name: "sort_by",
           title: "排序",
           type: "enumeration",
+          description: "排序",
           value: "最新上傳",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
@@ -560,6 +661,7 @@ WidgetMetadata = {
           name: "date",
           title: "时间范围",
           type: "enumeration",
+          description: "时间范围",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -575,6 +677,7 @@ WidgetMetadata = {
           name: "duration",
           title: "时长",
           type: "enumeration",
+          description: "时长",
           value: "",
           enumOptions: [
             { title: "全部", value: "" },
@@ -588,7 +691,7 @@ WidgetMetadata = {
             { title: "0-20 分钟", value: "0 - 20 分鐘" },
           ],
         },
-        { name: "page", title: "页码", type: "page" },
+        { name: "page", title: "页码", type: "page", description: "页码", value: "1" },
       ],
     },
     {
@@ -864,7 +967,7 @@ async function fetchVideoList(values) {
 function listValues(params, extra) {
   params = params || {};
   var values = {
-    sort: normalizeQueryValue(params.sort || (extra && extra.sort)),
+    sort: normalizeQueryValue(params.sort || params.sort_by || (extra && extra.sort)),
     genre: normalizeQueryValue(params.genre || (extra && extra.genre)),
     date: normalizeQueryValue(params.date || (extra && extra.date)),
     duration: normalizeQueryValue(params.duration || (extra && extra.duration)),
@@ -878,6 +981,10 @@ function listValues(params, extra) {
     }
   }
   return values;
+}
+
+async function loadPage(params) {
+  return fetchVideoList(listValues(params, { sort: "最新上傳" }));
 }
 
 async function loadLatestRelease(params) {
