@@ -1,7 +1,7 @@
 WidgetMetadata = {
   id: "forward.hanime.tv",
   title: "Hanime1",
-  version: "1.2.0",
+  version: "1.2.1",
   requiredVersion: "0.0.1",
   description:
     "Hanime1.me 成人内容模块。提供官网标题、分类、搜索、详情和支持拖动的多画质 MP4 播放资源。",
@@ -23,6 +23,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -82,6 +83,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -141,6 +143,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -200,6 +203,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -259,6 +263,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -318,6 +323,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -377,6 +383,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -436,6 +443,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -495,6 +503,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
@@ -554,6 +563,7 @@ WidgetMetadata = {
           title: "排序",
           type: "enumeration",
           value: "最新上傳",
+          displayMode: "inline",
           enumOptions: [
             { title: "最新上市", value: "最新上市" },
             { title: "最新上传", value: "最新上傳" },
