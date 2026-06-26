@@ -1,7 +1,7 @@
 WidgetMetadata = {
   id: "forward.hanime.tv",
   title: "Hanime1",
-  version: "1.2.1",
+  version: "1.2.2",
   requiredVersion: "0.0.1",
   description:
     "Hanime1.me 成人内容模块。提供官网标题、分类、搜索、详情和支持拖动的多画质 MP4 播放资源。",
@@ -41,6 +41,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -56,6 +57,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -101,6 +103,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -116,6 +119,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -161,6 +165,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -176,6 +181,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -221,6 +227,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -236,6 +243,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -281,6 +289,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -296,6 +305,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -341,6 +351,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -356,6 +367,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -401,6 +413,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -416,6 +429,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -461,6 +475,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -476,6 +491,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -521,6 +537,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -536,6 +553,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
@@ -581,6 +599,7 @@ WidgetMetadata = {
           title: "时间范围",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "过去 24 小时", value: "過去 24 小時" },
@@ -596,6 +615,7 @@ WidgetMetadata = {
           title: "时长",
           type: "enumeration",
           value: "",
+          displayMode: "inline",
           enumOptions: [
             { title: "全部", value: "" },
             { title: "1 分钟以上", value: "1 分鐘 +" },
