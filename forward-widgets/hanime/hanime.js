@@ -1,7 +1,7 @@
 WidgetMetadata = {
   id: "forward.hanime.tv",
   title: "Hanime1",
-  version: "1.2.3",
+  version: "1.2.4",
   requiredVersion: "0.0.1",
   description:
     "Hanime1.me 成人内容模块。提供官网标题、分类、搜索、详情和支持拖动的多画质 MP4 播放资源。",
@@ -12,11 +12,9 @@ WidgetMetadata = {
   detailCacheDuration: 300,
   modules: [
     {
-      id: "allVideos",
       title: "全部影片",
       functionName: "loadAll",
       cacheDuration: 300,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -72,11 +70,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genreHentai",
       title: "里番",
       functionName: "loadGenreHentai",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -132,11 +128,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genreShort",
       title: "泡面番",
       functionName: "loadGenreShort",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -192,11 +186,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genreMotionAnime",
       title: "Motion Anime",
       functionName: "loadGenreMotionAnime",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -252,11 +244,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genre3dcg",
       title: "3DCG",
       functionName: "loadGenre3dcg",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -312,11 +302,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genre25d",
       title: "2.5D",
       functionName: "loadGenre25d",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -372,11 +360,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genre2d",
       title: "2D 动画",
       functionName: "loadGenre2d",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -432,11 +418,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genreAi",
       title: "AI 生成",
       functionName: "loadGenreAi",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -492,11 +476,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genreMmd",
       title: "MMD",
       functionName: "loadGenreMmd",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
@@ -552,11 +534,9 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "genreCosplay",
       title: "Cosplay",
       functionName: "loadGenreCosplay",
       cacheDuration: 600,
-      type: "video",
       requiresWebView: false,
       params: [
         {
