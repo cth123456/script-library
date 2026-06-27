@@ -1,34 +1,16 @@
 WidgetMetadata = {
   id: "forward.adult.aggregate",
   title: "成人聚合搜索",
-  version: "0.1.0",
+  version: "0.2.0",
   requiredVersion: "0.0.1",
-  description:
-    "聚合服务器资源、Hanime1、MissAV、Jable 的搜索结果，并用番号/标题优先匹配服务器播放源。",
+  description: "聚合 Hanime1、MissAV、Jable 的搜索结果和播放源，不需要服务器 API。",
   author: "Codex",
   site: "https://github.com/cth123456/script-library",
   detailCacheDuration: 120,
-  globalParams: [
-    {
-      name: "serverApi",
-      title: "服务器搜索 API",
-      type: "input",
-      value: "",
-      description:
-        "可选。GET JSON 接口，模块会追加 q/code/title 参数。返回 results/items/data 或数组。",
-    },
-    {
-      name: "serverToken",
-      title: "服务器 Token",
-      type: "input",
-      value: "",
-      description: "可选。填写后使用 Authorization: Bearer <token> 请求服务器 API。",
-    },
-  ],
   modules: [
     {
       title: "聚合搜索",
-      description: "同时搜索网站和你的服务器资源",
+      description: "同时搜索 Hanime1、MissAV、Jable",
       requiresWebView: false,
       functionName: "loadAggregate",
       cacheDuration: 60,
@@ -46,33 +28,11 @@ WidgetMetadata = {
           value: "all",
           enumOptions: [
             { title: "全部", value: "all" },
-            { title: "服务器", value: "server" },
             { title: "Hanime1", value: "hanime1" },
             { title: "MissAV", value: "missav" },
             { title: "Jable", value: "jable" },
           ],
         },
-        {
-          name: "preferServer",
-          title: "服务器优先",
-          type: "enumeration",
-          value: "yes",
-          enumOptions: [
-            { title: "开启", value: "yes" },
-            { title: "关闭", value: "no" },
-          ],
-        },
-        { name: "page", title: "页码", type: "page", value: "1" },
-      ],
-    },
-    {
-      title: "服务器资源",
-      description: "只搜索你的服务器资源索引",
-      requiresWebView: false,
-      functionName: "loadServerOnly",
-      cacheDuration: 30,
-      params: [
-        { name: "keyword", title: "关键词/番号", type: "input" },
         { name: "page", title: "页码", type: "page", value: "1" },
       ],
     },
@@ -168,16 +128,6 @@ function appendQuery(url, values) {
   return url + (url.indexOf("?") >= 0 ? "&" : "?") + parts.join("&");
 }
 
-function parseJson(value) {
-  if (!value) return null;
-  if (typeof value === "object") return value;
-  try {
-    return JSON.parse(String(value));
-  } catch (error) {
-    return null;
-  }
-}
-
 function uniq(items) {
   var seen = {};
   var results = [];
@@ -234,7 +184,6 @@ function unpackLink(link) {
 
 function sourceTitle(source) {
   var map = {
-    server: "服务器",
     hanime1: "Hanime1",
     missav: "MissAV",
     jable: "Jable",
@@ -256,7 +205,7 @@ function toVideoItem(raw) {
     quality: raw.quality || "",
   };
   var link = packedLink(payload);
-  var titlePrefix = raw.source === "server" ? "[服务器] " : "[" + sourceTitle(raw.source) + "] ";
+  var titlePrefix = "[" + sourceTitle(raw.source) + "] ";
   return {
     id: raw.source + ":" + (code || raw.url || raw.title),
     type: "url",
@@ -298,65 +247,6 @@ async function requestText(url, headers, fallbackReader) {
   text = String(text || "");
   AGG_CACHE[cacheKey] = { text: text, expires: now + 120000 };
   return text;
-}
-
-function serverHeaders(params) {
-  var headers = { Accept: "application/json" };
-  if (params && params.serverToken) headers.Authorization = "Bearer " + params.serverToken;
-  return headers;
-}
-
-function serverRows(data) {
-  var parsed = parseJson(data);
-  if (!parsed) return [];
-  if (Array.isArray(parsed)) return parsed;
-  if (Array.isArray(parsed.results)) return parsed.results;
-  if (Array.isArray(parsed.items)) return parsed.items;
-  if (Array.isArray(parsed.data)) return parsed.data;
-  if (parsed.result && Array.isArray(parsed.result.items)) return parsed.result.items;
-  return [];
-}
-
-function normalizeServerItem(item, query) {
-  if (!item) return null;
-  var title = item.title || item.name || item.fileName || item.filename || item.path || query;
-  var url = item.videoUrl || item.url || item.streamUrl || item.playUrl || item.fileUrl || item.path;
-  if (!title || !url) return null;
-  return {
-    source: "server",
-    title: cleanText(title),
-    code: item.code || item.number || item.javCode || extractCode(title),
-    url: url,
-    videoUrl: url,
-    coverUrl: item.coverUrl || item.posterPath || item.poster || item.image || item.thumb || "",
-    quality: item.quality || item.resolution || item.source || "服务器",
-    headers: item.headers || item.customHeaders,
-  };
-}
-
-async function queryServer(params, query, code, limit) {
-  params = params || {};
-  var api = String(params.serverApi || "").trim();
-  if (!api) return [];
-  var url = appendQuery(api, {
-    q: query || code || "",
-    code: code || extractCode(query),
-    title: query || "",
-    limit: limit || 12,
-  });
-  try {
-    var response = await Widget.http.get(url, { headers: serverHeaders(params) });
-    var rows = serverRows(response && response.data);
-    var results = [];
-    for (var i = 0; i < rows.length; i++) {
-      var normalized = normalizeServerItem(rows[i], query || code);
-      if (normalized) results.push(normalized);
-    }
-    return results;
-  } catch (error) {
-    console.warn("[adult-aggregate] server search failed:", error.message || error);
-    return [];
-  }
 }
 
 function parseHanimeCards(html) {
@@ -481,12 +371,8 @@ async function loadAggregate(params) {
   if (!keyword) return [];
   var source = params.source || "all";
   var page = Number(params.page || 1);
-  var code = extractCode(keyword);
   var all = [];
 
-  if (source === "all" || source === "server") {
-    all = all.concat(await queryServer(params, keyword, code, 20));
-  }
   if (source === "all" || source === "hanime1") {
     all = all.concat(await safeSource(function () { return searchHanime(keyword, page); }, "hanime1"));
   }
@@ -498,15 +384,7 @@ async function loadAggregate(params) {
   }
 
   all = uniq(all);
-  if (params.preferServer !== "no") all.sort(sortServerFirst);
   return all.map(toVideoItem).filter(Boolean);
-}
-
-async function loadServerOnly(params) {
-  params = params || {};
-  var keyword = String(params.keyword || "").trim();
-  if (!keyword) return [];
-  return (await queryServer(params, keyword, extractCode(keyword), 30)).map(toVideoItem).filter(Boolean);
 }
 
 async function search(params) {
@@ -524,15 +402,8 @@ async function safeSource(fn, name) {
   }
 }
 
-function sortServerFirst(a, b) {
-  if (a.source === "server" && b.source !== "server") return -1;
-  if (a.source !== "server" && b.source === "server") return 1;
-  return 0;
-}
-
 async function loadDetail(link) {
   var payload = unpackLink(link) || { url: link, source: "unknown" };
-  var serverMatches = await queryServer(arguments.length > 1 ? arguments[1] : {}, payload.title || payload.code, payload.code, 5);
   var detail = {
     id: payload.source + ":" + (payload.code || payload.url || payload.title),
     type: "url",
@@ -547,10 +418,7 @@ async function loadDetail(link) {
     playerType: "system",
   };
 
-  if (serverMatches.length) {
-    detail.videoUrl = serverMatches[0].videoUrl;
-    detail.relatedItems = serverMatches.map(toVideoItem).filter(Boolean);
-  } else if (payload.videoUrl) {
+  if (payload.videoUrl) {
     detail.videoUrl = payload.videoUrl;
   } else if (payload.source === "hanime1") {
     var hanime = await hanimeDetail(payload);
@@ -652,20 +520,6 @@ function streamItem(name, url, description, headers) {
 async function loadResource(params) {
   params = params || {};
   var payload = unpackLink(params.link) || unpackLink(params.id) || null;
-  var code = (payload && payload.code) || extractCode(params.title || params.id || "");
-  var title = (payload && payload.title) || params.title || code;
-
-  var serverMatches = await queryServer(params, title, code, 8);
-  if (serverMatches.length) {
-    return serverMatches.map(function (item, index) {
-      return streamItem(
-        (index === 0 ? "服务器" : "服务器 " + (index + 1)) + (item.quality ? " " + item.quality : ""),
-        item.videoUrl,
-        [item.code, item.quality, "服务器资源"].filter(Boolean).join(" | "),
-        item.headers
-      );
-    });
-  }
 
   if (params.videoUrl || (payload && payload.videoUrl)) {
     return [streamItem("直接播放", params.videoUrl || payload.videoUrl, "直接播放", params.customHeaders || (payload && payload.headers))];
