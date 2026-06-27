@@ -13,16 +13,6 @@
 - 播放：从播放页和下载页双路提取 MP4，并附带播放请求头
 - 内容提示：包含成人内容，仅供成年人使用
 
-### 成人聚合搜索
-
-- 文件：[`forward-widgets/adult-aggregate/adult-aggregate.js`](forward-widgets/adult-aggregate/adult-aggregate.js)
-- 类型：ForwardWidget 聚合搜索与播放资源模块
-- 版本：`0.2.0`
-- 功能：聚合 Hanime1、MissAV、Jable 搜索结果，并在播放页返回对应网站播放源
-- 来源：支持全部、Hanime1、MissAV、Jable 单独筛选
-- 配置：普通用户直接导入即可，不需要服务器 API 或服主接口
-- 内容提示：包含成人内容，仅供成年人使用
-
 ## Userscripts
 
 ### WPS Office Daily Tasks
