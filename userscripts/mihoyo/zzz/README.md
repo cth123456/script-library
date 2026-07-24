@@ -27,5 +27,6 @@ Capture flow:
 Notes:
 
 - The original script says it was only tested on Surge. This wrapper only adds Loon capture and plugin packaging; it does not rewrite the original signing logic.
+- 米游社分享任务和发帖任务默认关闭。你发来的日志里这两个接口返回 `invalid request`，所以插件默认只跑已确认可用的签到、浏览、点赞等任务。
 - If cron runs but reports API risk/captcha or activity errors, that is upstream API behavior and needs a newer signing logic.
 - Cookie values are credentials. Do not share logs or screenshots containing them.
