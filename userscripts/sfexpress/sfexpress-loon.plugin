@@ -1,0 +1,19 @@
+#!name=顺丰速运签到
+#!desc=顺丰速运签到、日常任务、会员日、蜂蜜任务。Token 抓取可在插件参数里单独开关。
+#!author=Sliverkiss; mirrored by cth123456
+#!homepage=https://github.com/cth123456/script-library/tree/main/userscripts/sfexpress
+#!icon=https://raw.githubusercontent.com/Sliverkiss/QuantumultX/main/icon/sfsy.png
+#!tag=签到,顺丰速运
+#!system=iOS,iPadOS,macOS
+#!loon_version=3.2.1(733)
+
+[Argument]
+token_capture = switch,true,tag=Token 抓取,desc=开启后进入顺丰小程序我的页面并点击优惠券/分享跳转页会刷新 Token，抓取成功后可关闭
+
+[MITM]
+hostname = mcs-mimp-web.sf-express.com
+
+[Script]
+http-response ^https:\/\/mcs-mimp-web\.sf-express\.com\/mcs-mimp\/share\/.+ tag=顺丰速运获取Token, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/sfexpress/sfsy.js, requires-body=true, timeout=60, img-url=https://raw.githubusercontent.com/Sliverkiss/QuantumultX/main/icon/sfsy.png, enable={token_capture}
+
+cron "51 8,21 * * *" script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/sfexpress/sfsy.js, tag=顺丰速运签到, timeout=240, img-url=https://raw.githubusercontent.com/Sliverkiss/QuantumultX/main/icon/sfsy.png, enable=true
