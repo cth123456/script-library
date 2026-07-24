@@ -1,0 +1,23 @@
+#!name=绝区零米游社签到
+#!desc=lowking 绝区零脚本 Loon 包装版：新增 Cookie/UID/设备指纹抓取器，cron 执行原签到任务。
+#!author=lowking; Loon wrapper by cth123456
+#!homepage=https://github.com/cth123456/script-library/tree/main/userscripts/mihoyo/zzz
+#!icon=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png
+#!tag=签到,米游社,绝区零
+#!system=iOS,iPadOS,macOS
+#!loon_version=3.2.1(733)
+
+[Argument]
+cookie_capture = switch,true,tag=Cookie 抓取,desc=开启后打开米游社绝区零签到/社区页面，自动保存 zzz 脚本需要的 Cookie、UID、设备指纹
+run_cron = switch,true,tag=定时签到,desc=开启后每天 00:10 执行；脚本本身会等待 10 分钟发第二个帖子，所以超时设为 700 秒
+
+[MITM]
+hostname = act-nap-api.mihoyo.com,bbs-api.miyoushe.com,api-takumi.mihoyo.com,api-takumi-record.mihoyo.com
+
+[Script]
+http-request ^https:\/\/act-nap-api\.mihoyo\.com\/.+ tag=绝区零Cookie-活动, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-response ^https:\/\/act-nap-api\.mihoyo\.com\/.+ tag=绝区零Cookie-活动响应, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-request ^https:\/\/bbs-api\.miyoushe\.com\/.+ tag=绝区零Cookie-米游社, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-request ^https:\/\/api-takumi(-record)?\.mihoyo\.com\/.+ tag=绝区零Cookie-通行证, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+
+cron "10 0 * * *" script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.js, tag=绝区零签到, timeout=700, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={run_cron}
