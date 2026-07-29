@@ -1,8 +1,13 @@
-# 绝区零米游社签到 Loon 插件
+# 绝区零每日奖励 + 米游社社区打卡 Loon 插件
 
 Source: https://github.com/lowking/Scripts/blob/master/mihoyo/zzz.js
 
-This directory mirrors `zzz.js` and adds `zzz.cookie.js`, a Loon request/response capture helper that writes the persistent keys expected by the original script:
+This directory mirrors `zzz.js` and adds `zzz.cookie.js`, a Loon request/response capture helper that writes the persistent keys expected by the original script.
+
+It runs both supported sign-in paths:
+
+- 绝区零每日奖励签到: `act-nap-api.mihoyo.com/event/luna/zzz`
+- 米游社社区打卡: `bbs-api.miyoushe.com/apihub/app/api/signIn`
 
 - `zzzUidKey`
 - `zzzCookieKey`
@@ -20,7 +25,7 @@ Capture flow:
 
 1. Install the plugin and enable MITM for the listed hosts.
 2. Keep `Cookie 抓取` enabled.
-3. Open 米游社, enter 绝区零签到 page and 绝区零 community pages until the notification says the required parameters are complete.
+3. Open 米游社, enter the 绝区零每日签到 page and 绝区零 community pages until the notification says the required parameters are complete.
 4. Disable `Cookie 抓取` after capture if you do not want request interception to stay active.
 5. Keep `定时签到` enabled for the daily 00:10 cron.
 

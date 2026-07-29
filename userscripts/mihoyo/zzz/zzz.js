@@ -92,17 +92,17 @@ const BoxJsInfo = {
         },
         {
             "id": zzzCookieKey,
-            "name": "日常签到cookie",
+            "name": "绝区零每日奖励Cookie",
             "val": "",
             "type": "text",
-            "desc": ""
+            "desc": "用于 act-nap-api.mihoyo.com 的绝区零每日奖励签到"
         },
         {
             "id": signInCountDownAmountKey,
-            "name": "n次执行之后才进行日常签到",
+            "name": "n次执行之后才进行绝区零每日奖励签到",
             "val": 0,
             "type": "number",
-            "desc": "n次执行之后才进行日常签到"
+            "desc": "触发验证码风控后延迟重试"
         },
         {
             "id": zzzDfpKey,
@@ -511,43 +511,39 @@ const doCloudLogin = async () => {
 }
 
 const doSignIn = async () => {
+    const taskName = '绝区零每日奖励签到'
     // 签到有验证码，配置n天后继续签到
     if (signInCountDownAmount > 0) {
         signInCountDownAmount--
         lk.setVal(signInCountDownAmountKey, signInCountDownAmount)
+        lk.appendNotifyInfo(`⚠️${taskName}因风控冷却跳过，剩余${signInCountDownAmount}次`)
         return
     }
-    let title = '获取签到信息'
-    await getZzzInfo(title, zzzUid, zzzCookie, zzzDfp).then((info) => {
-        if (info?.retcode != 0) {
-            throw `获取签到信息异常，请重新获取cookie之后再尝试`
-        }
-        let isSign = info?.data?.is_sign
-        info = {
-            uid: zzzUid,
-            cookie: zzzCookie,
-            dfp: zzzDfp,
-            isSign
-        }
-        return info
-    }).then(async ({ uid, cookie, dfp, isSign }) => {
-        title = '日常签到'
-        if (isSign) {
-            lk.appendNotifyInfo(`⚠️${title}已经签到过了`)
+    let title = `获取${taskName}信息`
+    const info = await getZzzInfo(title, zzzUid, zzzCookie, zzzDfp)
+    lk.log(info?.s ? info.s() : info)
+    if (info?.retcode != 0) {
+        lk.execFail()
+        lk.appendNotifyInfo(`❌${taskName}失败：${info?.message || '获取签到信息异常，请重新获取Cookie后再试'}`)
+        return
+    }
+    if (info?.data?.is_sign) {
+        lk.appendNotifyInfo(`⚠️${taskName}已经签到过了`)
+        return
+    }
+    await signIn(taskName, zzzUid, zzzCookie, zzzDfp).then((signRet) => {
+        if (signRet?.retcode != 0) {
+            lk.execFail()
+            lk.appendNotifyInfo(`❌${taskName}失败：${signRet?.message}`)
             return
         }
-        await signIn(title, uid, cookie, dfp).then((signRet) => {
-            if (signRet?.retcode != 0) {
-                throw `❌${title}失败：${signRet?.message}`
-            }
-            if (signRet?.data?.is_risk) {
-                lk.appendNotifyInfo(`❌${title}失败：触发风控验证码，请等待一段时间再试`)
-                lk.execFail()
-                lk.setVal(signInCountDownAmountKey, 3)
-                return
-            }
-            lk.appendNotifyInfo(`🎉${title}成功`)
-        })
+        if (signRet?.data?.is_risk) {
+            lk.appendNotifyInfo(`❌${taskName}失败：触发风控验证码，请等待一段时间再试`)
+            lk.execFail()
+            lk.setVal(signInCountDownAmountKey, 3)
+            return
+        }
+        lk.appendNotifyInfo(`🎉${taskName}成功`)
     })
 }
 
@@ -557,7 +553,7 @@ const doBbsSignIn = async () => {
         lk.setVal(bbsSignInCountDownAmountKey, bbsSignInCountDownAmount)
         return
     }
-    let title = '米游社打卡'
+    let title = '米游社社区打卡'
     await bbsSignIn(title, zzzBbsCookie, zzzDfp).then((signRet) => {
         lk.log(signRet.s())
         switch (signRet?.retcode) {

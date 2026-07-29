@@ -1,5 +1,5 @@
 #!name=绝区零米游社签到
-#!desc=lowking 绝区零脚本 Loon 包装版：新增 Cookie/UID/设备指纹抓取器；分享和发帖任务默认关闭，避免 invalid request。
+#!desc=绝区零每日奖励签到 + 米游社社区打卡 Loon 包装版；分享和发帖任务默认关闭，避免 invalid request。
 #!author=lowking; Loon wrapper by cth123456
 #!homepage=https://github.com/cth123456/script-library/tree/main/userscripts/mihoyo/zzz
 #!icon=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png
@@ -8,13 +8,14 @@
 #!loon_version=3.2.1(733)
 
 [Argument]
-cookie_capture = switch,true,tag=Cookie 抓取,desc=开启后打开米游社绝区零签到/社区页面，自动保存 zzz 脚本需要的 Cookie、UID、设备指纹
+cookie_capture = switch,true,tag=Cookie 抓取,desc=开启后打开米游社内绝区零每日签到页和绝区零社区页，自动保存 Cookie、UID、设备指纹
 run_cron = switch,true,tag=定时签到,desc=开启后每天 00:10 执行；默认跳过当前失效的分享和发帖接口
 
 [MITM]
-hostname = act-nap-api.mihoyo.com,bbs-api.miyoushe.com,api-takumi.mihoyo.com,api-takumi-record.mihoyo.com
+hostname = act.mihoyo.com,act-nap-api.mihoyo.com,bbs-api.miyoushe.com,api-takumi.mihoyo.com,api-takumi-record.mihoyo.com
 
 [Script]
+http-request ^https:\/\/act\.mihoyo\.com\/bbs\/event\/signin\/zzz\/.+ tag=绝区零Cookie-每日奖励页, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=false, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
 http-request ^https:\/\/act-nap-api\.mihoyo\.com\/.+ tag=绝区零Cookie-活动, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
 http-response ^https:\/\/act-nap-api\.mihoyo\.com\/.+ tag=绝区零Cookie-活动响应, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
 http-request ^https:\/\/bbs-api\.miyoushe\.com\/.+ tag=绝区零Cookie-米游社, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}

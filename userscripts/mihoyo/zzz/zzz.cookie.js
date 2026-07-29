@@ -96,7 +96,8 @@ function done(value) {
   const uid = pickUid(url + "\n" + bodyText(req, resp));
   const updates = [];
 
-  const isZzzAct = host === "act-nap-api.mihoyo.com" || /event\/luna\/zzz/i.test(url);
+  const isZzzSignPage = host === "act.mihoyo.com" && /bbs\/event\/signin\/zzz/i.test(url);
+  const isZzzAct = host === "act-nap-api.mihoyo.com" || /event\/luna\/zzz/i.test(url) || isZzzSignPage;
   const isBbs = host === "bbs-api.miyoushe.com";
   const isTakumi = host === "api-takumi.mihoyo.com" || host === "api-takumi-record.mihoyo.com";
 
@@ -105,19 +106,19 @@ function done(value) {
   if (uid) write(KEYS.uid, uid, "UID", updates);
 
   if (cookie && looksLikeMihoyoCookie(cookie)) {
-    if (isZzzAct) write(KEYS.signCookie, cookie, "日常签到Cookie", updates);
+    if (isZzzAct) write(KEYS.signCookie, cookie, "绝区零每日奖励Cookie", updates);
     if (isBbs || isTakumi) write(KEYS.bbsCookie, cookie, "米游社Cookie", updates);
 
     // The original script requires both cookies. If only one side is observed,
     // seed the missing side so cron can at least run and expose real API errors.
-    if (!read(KEYS.signCookie)) write(KEYS.signCookie, cookie, "日常签到Cookie", updates);
+    if (!read(KEYS.signCookie)) write(KEYS.signCookie, cookie, "绝区零每日奖励Cookie", updates);
     if (!read(KEYS.bbsCookie)) write(KEYS.bbsCookie, cookie, "米游社Cookie", updates);
   }
 
   if (updates.length > 0) {
     const missing = [];
     if (!read(KEYS.uid)) missing.push("UID");
-    if (!read(KEYS.signCookie)) missing.push("签到Cookie");
+    if (!read(KEYS.signCookie)) missing.push("每日奖励Cookie");
     if (!read(KEYS.bbsCookie)) missing.push("米游社Cookie");
     if (!read(KEYS.dfp)) missing.push("设备指纹");
     const suffix = missing.length ? `；还缺：${missing.join("、")}` : "；必要参数已齐";
