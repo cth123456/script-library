@@ -1,0 +1,21 @@
+# Apple Intelligence / Private Cloud Compute / iCloud Private Relay / Siri
+# Loon Rule Set
+# Updated: 2026-07-30
+
+DOMAIN,guzzoni.apple.com
+DOMAIN,mask-api.fe.apple-dns.net
+DOMAIN,mask-api.icloud.com
+DOMAIN,mask-t.apple-dns.net
+DOMAIN,mask.apple-dns.net
+DOMAIN-SUFFIX,apps.mzstatic.com
+DOMAIN-SUFFIX,apple-relay.apple.com
+DOMAIN-SUFFIX,apple-relay.cloudflare.com
+DOMAIN-SUFFIX,apple-relay.fastly-edge.com
+DOMAIN-SUFFIX,apple-relay.mask.apple-dns.net
+DOMAIN-SUFFIX,cp4.cloudflare.com
+DOMAIN-SUFFIX,gateway.icloud.com
+DOMAIN-SUFFIX,gsp-ssl.ls.apple.com
+DOMAIN-SUFFIX,ls.apple.com
+DOMAIN-SUFFIX,mask-h2.icloud.com
+DOMAIN-SUFFIX,mask.icloud.com
+DOMAIN-SUFFIX,smoot.apple.com
