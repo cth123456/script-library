@@ -14,7 +14,7 @@ Surge 4.2.0+ 脚本配置(其他APP自行转换配置):
 */
 const lk = new ToolKit(`绝区零`, `Zzz`, {"httpApi": "ffff@10.0.0.6:6166"})
 const bannerUrl = 'https://images.gamebanana.com/img/Webpage/Game/Profile/Background/66868c3874664.jpg'
-const domain = 'https://act-nap-api.mihoyo.com'
+const domain = 'https://api-takumi.mihoyo.com/event/luna/zzz'
 const bbsDomain = 'https://bbs-api.miyoushe.com'
 const cloudGameDomain = 'https://cg-nap-api.mihoyo.com'
 const zzzUidKey = 'zzzUidKey'
@@ -23,6 +23,9 @@ const zzzCloudGameCookieKey = 'zzzCloudGameCookieKey'
 const zzzComboTokenKey = 'zzzComboTokenKey'
 const zzzDfpKey = 'zzzDfpKey'
 const zzzBbsCookieKey = 'zzzBbsCookieKey'
+const zzzDeviceIdKey = 'zzzDeviceIdKey'
+const zzzDeviceModelKey = 'zzzDeviceModelKey'
+const zzzDeviceNameKey = 'zzzDeviceNameKey'
 const appVersionKey = 'appVersionKey'
 const salt6xKey = 'salt6xKey'
 const saltK2Key = 'saltK2Key'
@@ -38,6 +41,9 @@ let zzzCloudGameCookie = lk.getVal(zzzCloudGameCookieKey)
 let zzzComboToken = lk.getVal(zzzComboTokenKey)
 let zzzDfp = lk.getVal(zzzDfpKey)
 let zzzBbsCookie = lk.getVal(zzzBbsCookieKey)
+let zzzDeviceId = lk.getVal(zzzDeviceIdKey)
+let zzzDeviceModel = lk.getVal(zzzDeviceModelKey)
+let zzzDeviceName = lk.getVal(zzzDeviceNameKey)
 let appVersion = lk.getVal(appVersionKey, "2.71.1")
 let salt6x = lk.getVal(salt6xKey, "t0qEgfub6cvueAPgR5m9aQWWVciEer7v")
 let saltK2 = lk.getVal(saltK2Key, "rtvTthKxEyreVXQCnhluFgLXPOFKPHlA")
@@ -95,7 +101,7 @@ const BoxJsInfo = {
             "name": "绝区零每日奖励Cookie",
             "val": "",
             "type": "text",
-            "desc": "用于 act-nap-api.mihoyo.com 的绝区零每日奖励签到"
+            "desc": "用于 api-takumi.mihoyo.com/event/luna/zzz 的绝区零每日奖励签到"
         },
         {
             "id": signInCountDownAmountKey,
@@ -110,6 +116,27 @@ const BoxJsInfo = {
             "val": "",
             "type": "text",
             "desc": "设备指纹"
+        },
+        {
+            "id": zzzDeviceIdKey,
+            "name": "设备ID",
+            "val": "",
+            "type": "text",
+            "desc": "每日奖励接口使用；由 Loon 抓取脚本自动保存"
+        },
+        {
+            "id": zzzDeviceModelKey,
+            "name": "设备型号",
+            "val": "",
+            "type": "text",
+            "desc": "每日奖励接口使用；由 Loon 抓取脚本自动保存"
+        },
+        {
+            "id": zzzDeviceNameKey,
+            "name": "设备名称",
+            "val": "",
+            "type": "text",
+            "desc": "每日奖励接口使用；由 Loon 抓取脚本自动保存"
         },
         {
             "id": zzzBbsCookieKey,
@@ -161,7 +188,7 @@ const BoxJsInfo = {
             "desc": "rtvTthKxEyreVXQCnhluFgLXPOFKPHlA"
         },
     ],
-    "keys": [zzzUidKey, zzzCookieKey, zzzCloudGameCookieKey, zzzComboTokenKey, zzzDfpKey, zzzBbsCookieKey, appVersionKey, salt6xKey, saltK2Key, enableShareTaskKey, enableReleasePostTaskKey],
+    "keys": [zzzUidKey, zzzCookieKey, zzzCloudGameCookieKey, zzzComboTokenKey, zzzDfpKey, zzzBbsCookieKey, zzzDeviceIdKey, zzzDeviceModelKey, zzzDeviceNameKey, appVersionKey, salt6xKey, saltK2Key, enableShareTaskKey, enableReleasePostTaskKey],
     "script_timeout": 700
 }
 
@@ -171,19 +198,33 @@ const BoxJsParam = {
     "repo": "https://github.com/lowking/Scripts",
 }
 
+const getDailyRewardHeaders = (cookie, dfp, body) => {
+    const headers = {
+        cookie,
+        "content-type": "application/json",
+        "origin": "https://act.mihoyo.com",
+        "referer": "https://act.mihoyo.com/",
+        "user-agent": `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/${appVersion}`,
+        "x-rpc-signgame": "zzz",
+        "x-rpc-device_fp": dfp,
+        "x-rpc-device_id": zzzDeviceId || dfp,
+        "x-rpc-client_type": 5,
+        "x-rpc-app_version": appVersion,
+        "x-rpc-language": "zh-cn",
+        "x-rpc-platform": "ios",
+    }
+    if (zzzDeviceModel) headers["x-rpc-device_model"] = zzzDeviceModel
+    if (zzzDeviceName) headers["x-rpc-device_name"] = zzzDeviceName
+    if (body) headers.ds = getDs("dailyCheckin", body)
+    return headers
+}
+
 const signIn = async (title, uid, cookie, dfp) => new Promise((resolve, _reject) => {
     lk.log(title)
     let body = {"act_id": "e202406242138391", "region": "prod_gf_cn", "uid": "" + uid, "lang": "zh-cn"}.s()
     lk.post({
-        url: `${domain}/event/luna/zzz/sign`,
-        headers: {
-            "x-rpc-signgame": "zzz",
-            "x-rpc-device_fp": dfp,
-            "x-rpc-client_type": 5,
-            "x-rpc-app_version": appVersion,
-            ds: getDs("dailyCheckin", body),
-            cookie: cookie
-        },
+        url: `${domain}/sign`,
+        headers: getDailyRewardHeaders(cookie, dfp, body),
         body
     }, async (error, _response, data) => {
         try {
@@ -365,14 +406,11 @@ const share = (title, postId, cookie, dfp) => new Promise((resolve, _reject) => 
     })
 })
 
-const getZzzInfo = async (title, uid, cookie) => new Promise((resolve, _reject) => {
+const getZzzInfo = async (title, uid, cookie, dfp) => new Promise((resolve, _reject) => {
     lk.log(title)
     lk.get({
-        url: `${domain}/event/luna/zzz/info?lang=zh-cn&act_id=e202406242138391&region=prod_gf_cn&uid=${uid}`,
-        headers: {
-            cookie: cookie,
-            "x-rpc-signgame": "zzz"
-        }
+        url: `${domain}/info?lang=zh-cn&act_id=e202406242138391&region=prod_gf_cn&uid=${uid}`,
+        headers: getDailyRewardHeaders(cookie, dfp)
     }, async (error, _response, data) => {
         try {
             if (error) {
@@ -512,12 +550,22 @@ const doCloudLogin = async () => {
 
 const doSignIn = async () => {
     const taskName = '绝区零每日奖励签到'
+    const missing = []
+    if (!zzzUid) missing.push("UID")
+    if (!zzzCookie) missing.push("每日奖励Cookie")
+    if (!zzzDfp) missing.push("设备指纹")
+    if (missing.length > 0) {
+        lk.execFail()
+        lk.appendNotifyInfo(`❌${taskName}失败：缺少${missing.join("、")}，请先打开绝区零每日签到页重新抓取`)
+        return false
+    }
     // 签到有验证码，配置n天后继续签到
     if (signInCountDownAmount > 0) {
         signInCountDownAmount--
         lk.setVal(signInCountDownAmountKey, signInCountDownAmount)
         lk.appendNotifyInfo(`⚠️${taskName}因风控冷却跳过，剩余${signInCountDownAmount}次`)
-        return
+        lk.execFail()
+        return false
     }
     let title = `获取${taskName}信息`
     const info = await getZzzInfo(title, zzzUid, zzzCookie, zzzDfp)
@@ -525,26 +573,26 @@ const doSignIn = async () => {
     if (info?.retcode != 0) {
         lk.execFail()
         lk.appendNotifyInfo(`❌${taskName}失败：${info?.message || '获取签到信息异常，请重新获取Cookie后再试'}`)
-        return
+        return false
     }
     if (info?.data?.is_sign) {
         lk.appendNotifyInfo(`⚠️${taskName}已经签到过了`)
-        return
+        return true
     }
-    await signIn(taskName, zzzUid, zzzCookie, zzzDfp).then((signRet) => {
-        if (signRet?.retcode != 0) {
-            lk.execFail()
-            lk.appendNotifyInfo(`❌${taskName}失败：${signRet?.message}`)
-            return
-        }
-        if (signRet?.data?.is_risk) {
-            lk.appendNotifyInfo(`❌${taskName}失败：触发风控验证码，请等待一段时间再试`)
-            lk.execFail()
-            lk.setVal(signInCountDownAmountKey, 3)
-            return
-        }
-        lk.appendNotifyInfo(`🎉${taskName}成功`)
-    })
+    const signRet = await signIn(taskName, zzzUid, zzzCookie, zzzDfp)
+    if (signRet?.retcode != 0) {
+        lk.execFail()
+        lk.appendNotifyInfo(`❌${taskName}失败：${signRet?.message}`)
+        return false
+    }
+    if (signRet?.data?.is_risk) {
+        lk.appendNotifyInfo(`❌${taskName}失败：触发风控验证码，请等待一段时间再试`)
+        lk.execFail()
+        lk.setVal(signInCountDownAmountKey, 3)
+        return false
+    }
+    lk.appendNotifyInfo(`🎉${taskName}成功`)
+    return true
 }
 
 const doBbsSignIn = async () => {
@@ -886,17 +934,19 @@ const doReleasePost = async () => {
 }
 
 const all = async () => {
-    if (!zzzUid || !zzzCookie || !zzzDfp || !zzzBbsCookie) {
-        throw "⚠️请先打开米游社获取cookie"
-    }
     const hours = lk.now.getHours()
-    if (hours === 19) {
-        await doExchangePolychromes()
-    } else {
-        if (zzzCloudGameCookie && zzzComboToken) {
-            await doCloudGameDailyCheck()
+    if (zzzCloudGameCookie && zzzComboToken) {
+        await doCloudGameDailyCheck()
+    }
+    await doSignIn()
+    if (hours === 19 && isEnableExchangePolychromes) {
+        if (zzzBbsCookie) {
+            await doExchangePolychromes()
+        } else {
+            lk.appendNotifyInfo(`⚠️菲林兑换已跳过：缺少米游社Cookie`)
         }
-        await doSignIn()
+    }
+    if (zzzBbsCookie) {
         await doBbsSignIn()
         await doBbsVoteAndShare()
         if (isEnableReleasePostTask) {
@@ -905,6 +955,8 @@ const all = async () => {
             lk.log(`发帖任务已跳过`)
             lk.appendNotifyInfo(`⚠️发帖任务已跳过`)
         }
+    } else {
+        lk.appendNotifyInfo(`⚠️米游社社区任务已跳过：缺少米游社Cookie`)
     }
 }
 
