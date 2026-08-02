@@ -1,0 +1,19 @@
+#!name=X 去广告（安全版）
+#!desc=移除可解密的 X/Twitter 时间线推广条目并拦截已知广告统计域名。不对 api.twitter.com 开启 MITM，避免原生 X 因证书绑定无法刷新。
+#!author=cth123456 (Loon wrapper), fkhb90 (upstream script)
+#!homepage=https://github.com/fkhb90/Surge
+#!icon=https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/X.png
+#!version=1.0.0
+#!date=2026-08-02
+
+[Rule]
+DOMAIN-SUFFIX,ads-twitter.com,REJECT
+DOMAIN,ads-api.twitter.com,REJECT
+DOMAIN,p.twitter.com,REJECT
+DOMAIN,scribe.twitter.com,REJECT
+
+[Script]
+http-response ^https?:\/\/(?:x\.com|twitter\.com|albtls\.t\.co)(?:\/i)?(?:\/api)?\/graphql\/[^\/]+\/(?:HomeTimeline|HomeLatestTimeline|ForYouTimeline|FollowingTimeline|SearchTimeline|TweetDetail|UserTweets|UserTweetsAndReplies|UserMedia|ListLatestTweetsTimeline|CommunityTweetsTimeline|Bookmarks|ConversationTimeline|GenericTimelineById)(?:\?.*)?$ script-path=https://raw.githubusercontent.com/fkhb90/Surge/main/x_ads_blocker-2.3.js, requires-body=true, max-size=4194304, timeout=8, tag=X 时间线去广告
+
+[MITM]
+hostname = x.com, twitter.com, albtls.t.co
