@@ -12,11 +12,14 @@ cookie_capture = switch,true,tag=Cookie 抓取,desc=开启后打开米游社内�
 run_cron = switch,true,tag=定时签到,desc=开启后每天 00:10 执行；默认跳过当前失效的分享和发帖接口
 
 [MITM]
-hostname = act-nap-api.mihoyo.com,bbs-api.miyoushe.com
+hostname = act.mihoyo.com,act-nap-api.mihoyo.com,api-takumi.mihoyo.com,bbs-api.miyoushe.com
 
 [Script]
-http-request ^https:\/\/act-nap-api\.mihoyo\.com\/.+ tag=绝区零Cookie-活动, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
-http-response ^https:\/\/act-nap-api\.mihoyo\.com\/.+ tag=绝区零Cookie-活动响应, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
-http-request ^https:\/\/bbs-api\.miyoushe\.com\/.+ tag=绝区零Cookie-米游社, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-request ^https:\/\/act\.mihoyo\.com\/bbs\/event\/signin\/zzz\/.+ tag=绝区零Cookie-签到页, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=false, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-request ^https:\/\/act-nap-api\.mihoyo\.com\/event\/luna\/zzz\/.+ tag=绝区零Cookie-新活动接口, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=false, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-response ^https:\/\/act-nap-api\.mihoyo\.com\/event\/luna\/zzz\/.+ tag=绝区零Cookie-新活动响应, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-request ^https:\/\/api-takumi\.mihoyo\.com\/event\/luna\/zzz\/.+ tag=绝区零Cookie-兼容活动接口, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=false, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-response ^https:\/\/api-takumi\.mihoyo\.com\/event\/luna\/zzz\/.+ tag=绝区零Cookie-兼容活动响应, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=true, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
+http-request ^https:\/\/bbs-api\.miyoushe\.com\/.+ tag=绝区零Cookie-米游社, script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.cookie.js, requires-body=false, timeout=30, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={cookie_capture}
 
 cron "10 0 * * *" script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/mihoyo/zzz/zzz.js, tag=绝区零签到, timeout=700, img-url=https://raw.githubusercontent.com/lowking/Scripts/master/doc/icon/zzz.png, enable={run_cron}

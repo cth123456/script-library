@@ -35,6 +35,20 @@ const unrelated = capture(
 );
 assert.deepEqual(unrelated, {});
 
+const signPage = capture(
+  "https://act.mihoyo.com/bbs/event/signin/zzz/e202406242138391.html",
+  { Cookie: "ltoken_v2=v2_sign_page; ltmid_v2=123456789" },
+);
+assert.equal(signPage.zzzCookieKey, "ltoken_v2=v2_sign_page; ltmid_v2=123456789");
+assert.equal(signPage.zzzUidKey, undefined);
+
+const legacyDaily = capture(
+  "https://api-takumi.mihoyo.com/event/luna/zzz/info?uid=100000002",
+  { Cookie: "cookie_token_v2=v2_legacy; account_id_v2=123456789" },
+);
+assert.equal(legacyDaily.zzzUidKey, "100000002");
+assert.equal(legacyDaily.zzzCookieKey, "cookie_token_v2=v2_legacy; account_id_v2=123456789");
+
 const daily = capture(
   "https://act-nap-api.mihoyo.com/event/luna/zzz/info?uid=100000001",
   {
