@@ -100,29 +100,26 @@ function done(value) {
   const deviceId = String(header(headers, "x-rpc-device_id") || header(headers, "x-rpc-device-id") || "").trim();
   const deviceModel = String(header(headers, "x-rpc-device_model") || header(headers, "x-rpc-device-model") || "").trim();
   const deviceName = String(header(headers, "x-rpc-device_name") || header(headers, "x-rpc-device-name") || "").trim();
-  const uid = pickUid(url + "\n" + bodyText(req, resp));
   const updates = [];
 
-  const isZzzSignPage = host === "act.mihoyo.com" && /bbs\/event\/signin\/zzz/i.test(url);
-  const isZzzAct = host === "act-nap-api.mihoyo.com" || /event\/luna\/zzz/i.test(url) || isZzzSignPage;
+  const isZzzAct = host === "act-nap-api.mihoyo.com" && /\/event\/luna\/zzz(?:\/|[?#]|$)/i.test(url);
   const isBbs = host === "bbs-api.miyoushe.com";
-  const isTakumi = host === "api-takumi.mihoyo.com" || host === "api-takumi-record.mihoyo.com";
 
-  if (dfp) write(KEYS.dfp, dfp, "设备指纹", updates);
-  if (appVersion) write(KEYS.appVersion, appVersion, "App版本", updates);
-  if (deviceId) write(KEYS.deviceId, deviceId, "设备ID", updates);
-  if (deviceModel) write(KEYS.deviceModel, deviceModel, "设备型号", updates);
-  if (deviceName) write(KEYS.deviceName, deviceName, "设备名称", updates);
-  if (uid) write(KEYS.uid, uid, "UID", updates);
+  if (isZzzAct) {
+    const uid = pickUid(url + "\n" + bodyText(req, resp));
+    if (dfp) write(KEYS.dfp, dfp, "设备指纹", updates);
+    if (appVersion) write(KEYS.appVersion, appVersion, "App版本", updates);
+    if (deviceId) write(KEYS.deviceId, deviceId, "设备ID", updates);
+    if (deviceModel) write(KEYS.deviceModel, deviceModel, "设备型号", updates);
+    if (deviceName) write(KEYS.deviceName, deviceName, "设备名称", updates);
+    if (uid) write(KEYS.uid, uid, "UID", updates);
+    if (cookie && looksLikeMihoyoCookie(cookie)) {
+      write(KEYS.signCookie, cookie, "绝区零每日奖励Cookie", updates);
+    }
+  }
 
-  if (cookie && looksLikeMihoyoCookie(cookie)) {
-    if (isZzzAct) write(KEYS.signCookie, cookie, "绝区零每日奖励Cookie", updates);
-    if (isBbs || isTakumi) write(KEYS.bbsCookie, cookie, "米游社Cookie", updates);
-
-    // Some MiYouShe web requests carry credentials usable by both flows.
-    // Save the observed cookie as a fallback without running sign-in here.
-    if (!read(KEYS.signCookie)) write(KEYS.signCookie, cookie, "绝区零每日奖励Cookie", updates);
-    if (!read(KEYS.bbsCookie)) write(KEYS.bbsCookie, cookie, "米游社Cookie", updates);
+  if (isBbs && cookie && looksLikeMihoyoCookie(cookie)) {
+    write(KEYS.bbsCookie, cookie, "米游社Cookie", updates);
   }
 
   if (updates.length > 0) {
