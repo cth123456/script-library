@@ -14,7 +14,7 @@ Surge 4.2.0+ 脚本配置(其他APP自行转换配置):
 */
 const lk = new ToolKit(`绝区零`, `Zzz`, {"httpApi": "ffff@10.0.0.6:6166"})
 const bannerUrl = 'https://images.gamebanana.com/img/Webpage/Game/Profile/Background/66868c3874664.jpg'
-const domain = 'https://api-takumi.mihoyo.com/event/luna/zzz'
+const domain = 'https://act-nap-api.mihoyo.com/event/luna/zzz'
 const bbsDomain = 'https://bbs-api.miyoushe.com'
 const cloudGameDomain = 'https://cg-nap-api.mihoyo.com'
 const zzzUidKey = 'zzzUidKey'
@@ -101,7 +101,7 @@ const BoxJsInfo = {
             "name": "绝区零每日奖励Cookie",
             "val": "",
             "type": "text",
-            "desc": "用于 api-takumi.mihoyo.com/event/luna/zzz 的绝区零每日奖励签到"
+            "desc": "用于 act-nap-api.mihoyo.com/event/luna/zzz 的绝区零每日奖励签到"
         },
         {
             "id": signInCountDownAmountKey,
