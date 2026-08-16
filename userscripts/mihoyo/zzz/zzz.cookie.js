@@ -102,11 +102,13 @@ function done(value) {
   const deviceName = String(header(headers, "x-rpc-device_name") || header(headers, "x-rpc-device-name") || "").trim();
   const updates = [];
 
-  const isZzzAct = host === "act-nap-api.mihoyo.com" && /\/event\/luna\/zzz(?:\/|[?#]|$)/i.test(url);
+  const isZzzSignPage = host === "act.mihoyo.com" && /\/bbs\/event\/signin\/zzz\//i.test(url);
+  const isZzzApi = (host === "act-nap-api.mihoyo.com" || host === "api-takumi.mihoyo.com")
+    && /\/event\/luna\/zzz(?:\/|[?#]|$)/i.test(url);
   const isBbs = host === "bbs-api.miyoushe.com";
 
-  if (isZzzAct) {
-    const uid = pickUid(url + "\n" + bodyText(req, resp));
+  if (isZzzSignPage || isZzzApi) {
+    const uid = isZzzApi ? pickUid(url + "\n" + bodyText(req, resp)) : "";
     if (dfp) write(KEYS.dfp, dfp, "设备指纹", updates);
     if (appVersion) write(KEYS.appVersion, appVersion, "App版本", updates);
     if (deviceId) write(KEYS.deviceId, deviceId, "设备ID", updates);
