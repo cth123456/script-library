@@ -39,8 +39,17 @@ const signPage = capture(
   "https://act.mihoyo.com/bbs/event/signin/zzz/e202406242138391.html",
   { Cookie: "ltoken_v2=v2_sign_page; ltmid_v2=123456789" },
 );
-assert.equal(signPage.zzzCookieKey, "ltoken_v2=v2_sign_page; ltmid_v2=123456789");
+assert.equal(signPage.zzzCookieKey, undefined);
 assert.equal(signPage.zzzUidKey, undefined);
+
+const signPageWithDailyCookie = capture(
+  "https://act.mihoyo.com/bbs/event/signin/zzz/e202406242138391.html",
+  { Cookie: "ltoken_v2=v2_sign_page; cookie_token_v2=v2_daily; account_id_v2=123456789" },
+);
+assert.equal(
+  signPageWithDailyCookie.zzzCookieKey,
+  "ltoken_v2=v2_sign_page; cookie_token_v2=v2_daily; account_id_v2=123456789",
+);
 
 const legacyDaily = capture(
   "https://api-takumi.mihoyo.com/event/luna/zzz/info?uid=100000002",

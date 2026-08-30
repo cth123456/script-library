@@ -35,6 +35,7 @@ const openUrlKey = 'zzzOpenUrlKey'
 const enableExchangePolychromesKey = 'zzzExchangePolychromes'
 const enableShareTaskKey = 'zzzEnableShareTask'
 const enableReleasePostTaskKey = 'zzzEnableReleasePostTask'
+const hasDailyRewardCookie = cookie => /(?:cookie_token|account_id)(?:_v2)?=/i.test(cookie || "")
 let zzzUid = lk.getVal(zzzUidKey)
 let zzzCookie = lk.getVal(zzzCookieKey)
 let zzzCloudGameCookie = lk.getVal(zzzCloudGameCookieKey)
@@ -553,6 +554,7 @@ const doSignIn = async () => {
     const missing = []
     if (!zzzUid) missing.push("UID")
     if (!zzzCookie) missing.push("每日奖励Cookie")
+    else if (!hasDailyRewardCookie(zzzCookie)) missing.push("有效的每日奖励Cookie")
     if (!zzzDfp) missing.push("设备指纹")
     if (missing.length > 0) {
         lk.execFail()

@@ -78,6 +78,11 @@ function looksLikeMihoyoCookie(cookie) {
   return /(ltoken|ltuid|stoken|stuid|account_id|account_mid|cookie_token|login_ticket)/i.test(cookie || "");
 }
 
+function looksLikeDailyRewardCookie(cookie) {
+  return looksLikeMihoyoCookie(cookie)
+    && /(?:cookie_token|account_id)(?:_v2)?=/i.test(cookie || "");
+}
+
 function notify(subtitle, message) {
   if (typeof $notification !== "undefined") $notification.post(NAME, subtitle || "", message || "");
 }
@@ -115,7 +120,7 @@ function done(value) {
     if (deviceModel) write(KEYS.deviceModel, deviceModel, "设备型号", updates);
     if (deviceName) write(KEYS.deviceName, deviceName, "设备名称", updates);
     if (uid) write(KEYS.uid, uid, "UID", updates);
-    if (cookie && looksLikeMihoyoCookie(cookie)) {
+    if (cookie && looksLikeDailyRewardCookie(cookie)) {
       write(KEYS.signCookie, cookie, "绝区零每日奖励Cookie", updates);
     }
   }
