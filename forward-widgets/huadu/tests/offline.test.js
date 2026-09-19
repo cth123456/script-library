@@ -363,6 +363,84 @@ test("搜索：真实空结果返回空数组（不是降级、不是报错）",
   assert.strictEqual(suggestUsed.length, 0, "真实空结果不应触发降级");
 });
 
+test("宿主形态兼容：JSON 已被宿主解析成对象时列表照常工作", async function () {
+  // 真机实测：宿主会按 Content-Type 自动解析 JSON，data 不是字符串而是对象
+  const runtime = createWidget({
+    routes: {
+      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+    },
+    intercept: function (url) {
+      if (url.indexOf("/index.php/ajax/data") >= 0) {
+        return { statusCode: 200, data: JSON.parse(listJson(1, [27916])) };
+      }
+      return undefined;
+    },
+  });
+  const api = loadModule(runtime.widget).api;
+  const items = await api.loadLatest({ page: 1 });
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].id, "huadu:27916");
+});
+
+test("宿主形态兼容：无包装字段 / status 命名 / body 字段都能识别", async function () {
+  const runtime = createWidget({
+    routes: {
+      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+    },
+    intercept: function (url) {
+      if (url.indexOf("/index.php/ajax/data") >= 0) {
+        // 既无 data 也无状态字段：直接把响应体当负载
+        return JSON.parse(listJson(1, [27916, 27905]));
+      }
+      if (url.indexOf("/index.php/voddetail/27916.html") >= 0) {
+        // 用 status 而不是 statusCode，且用 body 承载 HTML
+        return { status: 200, body: DETAIL_HTML };
+      }
+      return undefined;
+    },
+  });
+  const api = loadModule(runtime.widget).api;
+  const items = await api.loadLatest({ page: 1 });
+  assert.strictEqual(items.length, 2);
+  const detail = await api.loadDetail("huadu://vod/27916");
+  assert.strictEqual(detail.title, "MKMP-716 详情标题-女演员");
+});
+
+test("全部线路都在冷却时：忽略冷却强制重试一轮（不卡死）", async function () {
+  const runtime = createWidget({
+    routes: {
+      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+    },
+    intercept: function (url) {
+      if (url.indexOf("/index.php/ajax/data") >= 0) {
+        return { statusCode: 500, data: "boom" };
+      }
+      return undefined;
+    },
+  });
+  const api = loadModule(runtime.widget).api;
+
+  let firstFailed = false;
+  try {
+    await api.loadLatest({ page: 1 });
+  } catch (error) {
+    firstFailed = true;
+  }
+  assert.ok(firstFailed, "第一次应失败并让线路进入冷却");
+
+  runtime.state.calls.length = 0;
+  let secondFailed = false;
+  try {
+    // 第二页（不同缓存键）在全部冷却的情况下仍应真的发出请求，而不是直接抛“冷却中”
+    await api.loadLatest({ page: 2 });
+  } catch (error) {
+    secondFailed = true;
+  }
+  assert.ok(secondFailed, "站点仍故障时应当失败");
+  const listCalls = runtime.state.calls.filter((c) => c.url.indexOf("/index.php/ajax/data") >= 0);
+  assert.ok(listCalls.length > 0, "冷却期也应有真实请求（强制重试）");
+});
+
 test("详情：字段解析 + 猜你喜欢相关条目", async function () {
   const runtime = createWidget({
     routes: {

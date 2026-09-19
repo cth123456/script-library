@@ -31,7 +31,7 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.1",
+  version: "1.0.2",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
@@ -638,7 +638,28 @@ async function huaduHttpGet(target, options) {
     throw huaduError("网络请求失败：" + (error && error.message ? error.message : "未知错误"), "network");
   }
 
-  var status = response && response.statusCode !== undefined ? response.statusCode : 200;
+  // 宿主实现差异：可能是 {statusCode, data} 包装，也可能直接返回原始负载；
+  // data 可能是字符串，也可能已经被宿主解析成对象（实测确实会解析 JSON）。
+  var status = 200;
+  var payload = response;
+  if (response && typeof response === "object" && !Array.isArray(response)) {
+    status = huaduResponseStatus(response);
+    if (response.data !== undefined) {
+      payload = response.data;
+    } else if (response.body !== undefined) {
+      payload = response.body;
+    } else if (response.text !== undefined) {
+      payload = response.text;
+    } else if (response.content !== undefined) {
+      payload = response.content;
+    } else if (response.statusCode === undefined && response.status === undefined) {
+      // 既没有包装字段也没有状态字段：当作宿主已解析的响应体本身
+      payload = response;
+    } else {
+      payload = "";
+    }
+  }
+
   var kind = huaduClassifyStatus(status);
 
   if (kind === "waf") throw huaduError("被站点边缘拦截（403）", "waf");
@@ -647,9 +668,31 @@ async function huaduHttpGet(target, options) {
   if (kind === "not-found") throw huaduError("接口或页面不存在（404）", "not-found");
   if (kind !== "ok") throw huaduError("请求失败（" + status + "）", kind);
 
-  var data = response ? response.data : "";
-  if (data === undefined || data === null || data === "") throw huaduError("响应为空", "empty");
-  return data;
+  if (payload === undefined || payload === null || payload === "") {
+    throw huaduError("响应为空", "empty");
+  }
+  return payload;
+}
+
+function huaduResponseStatus(response) {
+  if (!response || typeof response !== "object") return 200;
+  if (response.statusCode !== undefined) return huaduToInt(response.statusCode, 200);
+  if (response.status !== undefined) return huaduToInt(response.status, 200);
+  if (response.code !== undefined && huaduToInt(response.code, 0) >= 100) {
+    return huaduToInt(response.code, 200);
+  }
+  return 200;
+}
+
+// 原始负载 → 文本（对象则序列化回 JSON 文本）
+function huaduPayloadToText(data) {
+  if (typeof data === "string") return data;
+  if (data === undefined || data === null) return "";
+  try {
+    return JSON.stringify(data);
+  } catch (error) {
+    return String(data);
+  }
 }
 
 function huaduRetryable(kind) {
@@ -662,13 +705,14 @@ function huaduRetryable(kind) {
   );
 }
 
-async function huaduFetchText(path, options) {
+// 取原始负载：候选切换 + 同域重试 + 会话内缓存
+async function huaduFetchRaw(path, options) {
   var opts = options || {};
   var fresh = !!opts.fresh;
   var key = String(path || "");
   var now = huaduNow();
   var cached = HUADU_MEM_TEXT_CACHE[key];
-  if (!fresh && cached && cached.expires > now) return cached.text;
+  if (!fresh && cached && cached.expires > now) return cached.data;
 
   var state = await huaduLoadState();
   var candidates = await huaduCandidateEntries(state);
@@ -679,28 +723,39 @@ async function huaduFetchText(path, options) {
   var lastError = null;
   var tried = 0;
 
-  for (var i = 0; i < list.length && tried < limit; i++) {
-    var entry = list[i];
-    var host = huaduHostOf(entry);
-    if (huaduHostCooling(state, host, now)) continue;
-    tried++;
+  // 冷却期只跳过「还有别的候选可用」的情况；若全都在冷却，则忽略冷却强制重试一轮，
+  // 避免刚连续失败后一直卡在「所有线路都在冷却」。
+  var attempts = [false, true];
 
-    for (var attempt = 0; attempt < HUADU_ATTEMPTS_PER_HOST; attempt++) {
-      try {
-        var text = await huaduHttpGet(entry + key, opts);
-        if (typeof text !== "string" || !text) throw huaduError("响应内容为空", "empty");
-        await huaduMarkHostSuccess(state, entry);
-        if (!fresh) HUADU_MEM_TEXT_CACHE[key] = { text: text, expires: now + HUADU_TEXT_CACHE_MS };
-        return text;
-      } catch (error) {
-        lastError = error;
-        var kind = error && error.huaduKind ? error.huaduKind : "network";
-        console.log("[huadu] 页面读取失败（" + host + "）：" + error.message);
-        if (kind === "not-found" || !huaduRetryable(kind)) {
-          await huaduMarkHostFailure(state, entry);
-          throw error;
+  for (var round = 0; round < attempts.length; round++) {
+    var ignoreCooldown = attempts[round];
+    if (round === 1 && tried > 0) break;
+
+    tried = 0;
+    for (var i = 0; i < list.length && tried < limit; i++) {
+      var entry = list[i];
+      var host = huaduHostOf(entry);
+      if (!ignoreCooldown && huaduHostCooling(state, host, now)) continue;
+      tried++;
+
+      for (var attempt = 0; attempt < HUADU_ATTEMPTS_PER_HOST; attempt++) {
+        try {
+          var data = await huaduHttpGet(entry + key, opts);
+          await huaduMarkHostSuccess(state, entry);
+          if (!fresh) {
+            HUADU_MEM_TEXT_CACHE[key] = { data: data, expires: now + HUADU_TEXT_CACHE_MS };
+          }
+          return data;
+        } catch (error) {
+          lastError = error;
+          var kind = error && error.huaduKind ? error.huaduKind : "network";
+          console.log("[huadu] 页面读取失败（" + host + "）：" + error.message);
+          if (kind === "not-found" || !huaduRetryable(kind)) {
+            await huaduMarkHostFailure(state, entry);
+            throw error;
+          }
+          if (attempt + 1 >= HUADU_ATTEMPTS_PER_HOST) await huaduMarkHostFailure(state, entry);
         }
-        if (attempt + 1 >= HUADU_ATTEMPTS_PER_HOST) await huaduMarkHostFailure(state, entry);
       }
     }
   }
@@ -708,12 +763,19 @@ async function huaduFetchText(path, options) {
   throw huaduError("所有候选线路都失败：" + (lastError ? lastError.message : "未知"), "network");
 }
 
+async function huaduFetchText(path, options) {
+  var text = huaduPayloadToText(await huaduFetchRaw(path, options));
+  if (!text) throw huaduError("响应内容为空", "empty");
+  return text;
+}
+
 async function huaduFetchJson(path, options) {
-  var text = await huaduFetchText(path, options);
+  var data = await huaduFetchRaw(path, options);
+  if (typeof data === "object" && data !== null) return data; // 宿主已解析成对象
+  var text = String(data);
   try {
     return JSON.parse(text);
   } catch (error) {
-    // 兼容宿主已经把 JSON 解析成对象、返回字符串化结果的情况
     throw huaduError("响应不是合法 JSON（可能被拦截或站点已改版）", "parse");
   }
 }
