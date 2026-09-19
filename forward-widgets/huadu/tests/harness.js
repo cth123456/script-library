@@ -63,14 +63,12 @@ function createWidget(options) {
   return { widget: widget, state: state };
 }
 
-// 加载模块：清 require 缓存 -> 注入全局 Widget -> 取命名空间
-// （每次都要清掉 huaduWidgetApi，否则会拿到上一份模块实例的闭包）
+// 加载模块：清 require 缓存 -> 注入全局 Widget -> require 取模块导出
 function loadModule(widget) {
-  delete global.huaduWidgetApi;
   delete require.cache[require.resolve("../huadu.js")];
   global.Widget = widget;
-  require("../huadu.js");
-  return { metadata: global.WidgetMetadata, api: global.huaduWidgetApi };
+  const api = require("../huadu.js");
+  return { metadata: global.WidgetMetadata, api: api };
 }
 
 module.exports = {

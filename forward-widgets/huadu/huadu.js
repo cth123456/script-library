@@ -31,18 +31,16 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.0",
+  version: "1.0.1",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
   author: "Codex",
   site: "https://ab.hdfby.com",
   icon: "https://ab.hdfby.com/favicon.ico",
-  iconurl: "https://ab.hdfby.com/favicon.ico",
   detailCacheDuration: 60,
   modules: [
     {
-      id: "huadu.latest",
       title: "最新更新",
       description: "按更新时间倒序（站点固定排序，不支持其它排序）",
       requiresWebView: false,
@@ -53,7 +51,6 @@ WidgetMetadata = {
       ],
     },
     {
-      id: "huadu.category",
       title: "分类浏览",
       description: "一级/二级分类，来自站点导航实测映射",
       requiresWebView: false,
@@ -1182,22 +1179,27 @@ async function loadResource(params) {
   ];
 }
 
-/* ============================ 命名空间（可选） ============================ */
+/* ============================ 可选导出（仅离线测试用） ============================ */
 
-// 宿主按全局脚本执行时函数本就在全局；这里显式挂一个命名空间，
-// 方便宿主调试、也便于离线夹具按名字取用（两种加载方式都能工作）。
-if (typeof globalThis !== "undefined" && !globalThis.huaduWidgetApi) {
-  globalThis.huaduWidgetApi = {
-    loadLatest: loadLatest,
-    loadCategory: loadCategory,
-    search: search,
-    loadDetail: loadDetail,
-    loadResource: loadResource,
-    huaduAssertSafeUrl: huaduAssertSafeUrl,
-    huaduParseConfigJs: huaduParseConfigJs,
-    huaduExtractId: huaduExtractId,
-    huaduDecodePlayerUrl: huaduDecodePlayerUrl,
-    huaduIsPlaceholderPage: huaduIsPlaceholderPage,
-    huaduParseCards: huaduParseCards,
-  };
+// 宿主里没有 module，这段不会执行；离线夹具用它按名字取用模块函数。
+// 注意：脚本加载期只有「常量初始化 + WidgetMetadata 赋值」，不向宿主全局写任何东西，
+// 避免宿主沙箱禁止写全局时整脚本加载失败。
+if (typeof module !== "undefined" && module && module.exports) {
+  try {
+    module.exports = {
+      loadLatest: loadLatest,
+      loadCategory: loadCategory,
+      search: search,
+      loadDetail: loadDetail,
+      loadResource: loadResource,
+      huaduAssertSafeUrl: huaduAssertSafeUrl,
+      huaduParseConfigJs: huaduParseConfigJs,
+      huaduExtractId: huaduExtractId,
+      huaduDecodePlayerUrl: huaduDecodePlayerUrl,
+      huaduIsPlaceholderPage: huaduIsPlaceholderPage,
+      huaduParseCards: huaduParseCards,
+    };
+  } catch (error) {
+    // 某些沙箱可能禁止导出，忽略即可
+  }
 }
