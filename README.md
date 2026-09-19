@@ -13,6 +13,19 @@
 - 播放：从播放页和下载页双路提取 MP4，并附带播放请求头
 - 内容提示：包含成人内容，仅供成年人使用
 
+### 花都影视（Huadu）
+
+- 文件：[`forward-widgets/huadu/huadu.js`](forward-widgets/huadu/huadu.js)
+- 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（26 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
+- 现网抽样（人工执行）：[`forward-widgets/huadu/tests/live-smoke.test.js`](forward-widgets/huadu/tests/live-smoke.test.js)
+- 类型：ForwardWidget 视频模块
+- 版本：`1.0.0`
+- 数据来源：站点自带 JSON 接口（列表/分类）+ SSR 详情页与播放页；不使用首页推荐 HTML
+- 功能：最新更新、分类浏览（16 个分类）、分页（站点上限 20 页 × 20 条）、搜索（搜索页为主，suggest 为降级并对死链做存活校验）、详情、m3u8 播放资源
+- 稳定性：从发布页 `js/config.js` 自动发现入口（纯文本解析，不使用 `eval`）、候选清单缓存、`lastGood` 记忆、同域重试、失败域 10 分钟冷却、内置候选域兜底；错误按类型区分，不把失败伪装成空数组
+- 安全：仅 https + 域名族白名单，拒绝凭据 / IP 字面量 / 本机与内网地址；不执行远端脚本
+- 内容提示：包含成人内容，仅供成年人使用
+
 ## Userscripts
 
 ### WPS Office Daily Tasks
