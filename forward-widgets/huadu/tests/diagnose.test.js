@@ -38,14 +38,14 @@ async function main() {
     assert.strictEqual(typeof loaded.api[loaded.metadata.modules[0].functionName], "function");
   });
 
-  await check("全部可达：7 条条目全部标记成功", async function () {
+  await check("全部可达：9 条条目全部标记成功", async function () {
     const loaded = loadDiagnose(async function (url) {
       if (url.indexOf("/js/config.js") >= 0) return { statusCode: 200, data: 'window.line_1 = "https://x";' };
       if (url.indexOf("/ajax/data") >= 0) return { statusCode: 200, data: '{"code":1,"list":[{"vod_id":1}]}' };
       return { statusCode: 200, data: "binary" };
     });
     const items = await loaded.api.runCheck();
-    assert.strictEqual(items.length, 7);
+    assert.strictEqual(items.length, 9);
     for (const item of items) {
       assert.ok(item.title.indexOf("✅") === 0, "应全部成功：" + item.title);
     }
@@ -60,7 +60,7 @@ async function main() {
       return { statusCode: 200, data: "binary" };
     });
     const items = await loaded.api.runCheck();
-    assert.strictEqual(items.length, 7);
+    assert.strictEqual(items.length, 9);
     const hdys00 = items.filter((i) => i.title.indexOf("hdys00") >= 0)[0];
     const hdys01 = items.filter((i) => i.title.indexOf("hdys01") >= 0)[0];
     assert.ok(hdys00.title.indexOf("❌") === 0, hdys00.title);

@@ -17,12 +17,12 @@
 WidgetMetadata = {
   id: "forward.huadu.diagnose",
   title: "花都影视 · 网络自检",
-  version: "1.0.0",
+  version: "1.0.1",
   requiredVersion: "0.0.1",
-  description: "诊断用模块：检查当前设备能否访问花都影视的发布页、线路域与图片 CDN。",
+  description: "诊断用模块：检查当前设备能否访问花都影视的发布页、线路域、图片 CDN 与封面图片。",
   author: "Codex",
   site: "https://ab.hdfby.com",
-  icon: "https://ab.hdfby.com/favicon.ico",
+  icon: "https://f7.hdys00.com/hdys/img/favicon.ico",
   modules: [
     {
       title: "运行自检",
@@ -48,7 +48,13 @@ var CHECK_TARGETS = [
   { name: "线路 f7.hdys01.com", url: "https://f7.hdys01.com/index.php/ajax/data?mid=1&tid=1&limit=10&page=1", mark: "vod_id" },
   { name: "线路 f7.huadudm.com", url: "https://f7.huadudm.com/index.php/ajax/data?mid=1&tid=1&limit=10&page=1", mark: "vod_id" },
   { name: "线路 f7.huaduys.com", url: "https://f7.huaduys.com/index.php/ajax/data?mid=1&tid=1&limit=10&page=1", mark: "vod_id" },
-  { name: "图片 CDN pic.3010.top", url: "https://pic.3010.top/no.jpg", mark: "" },
+  { name: "图片 CDN 占位图", url: "https://pic.3010.top/no.jpg", mark: "" },
+  {
+    name: "封面图片（真实条目）",
+    url: "https://pic.3010.top/upload/vod/20260821-1/3f0abcc32b776b52e5fb6321d86b782b.jpg",
+    mark: "",
+  },
+  { name: "模块图标（线路域）", url: "https://f7.hdys00.com/hdys/img/favicon.ico", mark: "" },
 ];
 
 async function runCheck() {

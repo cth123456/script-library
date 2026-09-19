@@ -31,13 +31,14 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.2",
+  version: "1.0.3",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
   author: "Codex",
   site: "https://ab.hdfby.com",
-  icon: "https://ab.hdfby.com/favicon.ico",
+  // 图标放在与接口同源、实测可用的线路域上（发布页曾有 403 挑战，不适合当图标源）
+  icon: "https://f7.hdys00.com/hdys/img/favicon.ico",
   detailCacheDuration: 60,
   modules: [
     {
