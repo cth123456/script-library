@@ -64,17 +64,35 @@ async function runCheck() {
     var title = "";
     var description = "";
     var ok = false;
-    try {
-      var response = await Widget.http.get(target.url, { headers: CHECK_HEADERS });
-      var status = response && response.statusCode !== undefined ? response.statusCode : 200;
-      var body = response && response.data !== undefined && response.data !== null ? String(response.data) : "";
-      var hit = target.mark ? body.indexOf(target.mark) >= 0 : body.length > 0;
-      ok = status === 200 && hit;
-      title = (ok ? "✅ " : "⚠️ ") + target.name + "（HTTP " + status + "）";
-      description = "响应 " + body.length + " 字节；" + (hit ? "内容符合预期" : "内容不符合预期（mark=" + target.mark + "）");
-    } catch (error) {
-      title = "❌ " + target.name;
-      description = "请求异常：" + (error && error.message ? error.message : String(error));
+    var tries = 3; // 每个目标连测 3 次，暴露「时好时坏」的链路
+    var success = 0;
+    var lastError = "";
+    var lastStatus = 0;
+    var lastSize = 0;
+    for (var t = 0; t < tries; t++) {
+      try {
+        var response = await Widget.http.get(target.url, { headers: CHECK_HEADERS });
+        var status = response && response.statusCode !== undefined ? response.statusCode : 200;
+        var body = response && response.data !== undefined && response.data !== null ? String(response.data) : "";
+        var hit = target.mark ? body.indexOf(target.mark) >= 0 : body.length > 0;
+        lastStatus = status;
+        lastSize = body.length;
+        if (status === 200 && hit) success++;
+        else lastError = "HTTP " + status + (hit ? "" : " / 内容不含预期标记");
+      } catch (error) {
+        lastError = error && error.message ? error.message : String(error);
+      }
+    }
+    ok = success === tries;
+    if (ok) {
+      title = "✅ " + target.name + "（3/3 成功）";
+      description = "HTTP " + lastStatus + "，" + lastSize + " 字节";
+    } else if (success > 0) {
+      title = "⚠️ " + target.name + "（" + success + "/3 成功，链路不稳定）";
+      description = "最近一次：" + (lastError || "HTTP " + lastStatus);
+    } else {
+      title = "❌ " + target.name + "（0/3 成功）";
+      description = "错误：" + (lastError || "未知");
     }
     items.push({
       id: "huadu-diag:" + i,
