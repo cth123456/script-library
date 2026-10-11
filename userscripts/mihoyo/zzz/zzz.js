@@ -35,7 +35,8 @@ const openUrlKey = 'zzzOpenUrlKey'
 const enableExchangePolychromesKey = 'zzzExchangePolychromes'
 const enableShareTaskKey = 'zzzEnableShareTask'
 const enableReleasePostTaskKey = 'zzzEnableReleasePostTask'
-const hasDailyRewardCookie = cookie => /(?:cookie_token|account_id)(?:_v2)?=/i.test(cookie || "")
+const zzzStokenKey = 'zzzStokenKey'
+const zzzMidKey = 'zzzMidKey'
 let zzzUid = lk.getVal(zzzUidKey)
 let zzzCookie = lk.getVal(zzzCookieKey)
 let zzzCloudGameCookie = lk.getVal(zzzCloudGameCookieKey)
@@ -102,7 +103,21 @@ const BoxJsInfo = {
             "name": "绝区零每日奖励Cookie",
             "val": "",
             "type": "text",
-            "desc": "用于 act-nap-api.mihoyo.com/event/luna/zzz 的绝区零每日奖励签到"
+            "desc": "备用；脚本会优先用下面的 stoken 自动刷新出可用 Cookie"
+        },
+        {
+            "id": zzzStokenKey,
+            "name": "米游社SToken",
+            "val": "",
+            "type": "text",
+            "desc": "长期凭据。有了它脚本会自动兑换 cookie_token，不再依赖抓取网页 Cookie。可在米游社内打开绝区零游戏中心/重新登录，由 Loon 抓取脚本自动保存；也可手动粘贴"
+        },
+        {
+            "id": zzzMidKey,
+            "name": "米游社账号Mid",
+            "val": "",
+            "type": "text",
+            "desc": "对应 stoken 的账号 mid（v2 stoken 需要），同样可自动抓取"
         },
         {
             "id": signInCountDownAmountKey,
@@ -189,7 +204,7 @@ const BoxJsInfo = {
             "desc": "rtvTthKxEyreVXQCnhluFgLXPOFKPHlA"
         },
     ],
-    "keys": [zzzUidKey, zzzCookieKey, zzzCloudGameCookieKey, zzzComboTokenKey, zzzDfpKey, zzzBbsCookieKey, zzzDeviceIdKey, zzzDeviceModelKey, zzzDeviceNameKey, appVersionKey, salt6xKey, saltK2Key, enableShareTaskKey, enableReleasePostTaskKey],
+    "keys": [zzzUidKey, zzzCookieKey, zzzStokenKey, zzzMidKey, zzzCloudGameCookieKey, zzzComboTokenKey, zzzDfpKey, zzzBbsCookieKey, zzzDeviceIdKey, zzzDeviceModelKey, zzzDeviceNameKey, appVersionKey, salt6xKey, saltK2Key, enableShareTaskKey, enableReleasePostTaskKey],
     "script_timeout": 700
 }
 
@@ -198,6 +213,187 @@ const BoxJsParam = {
     "author": "@lowking",
     "repo": "https://github.com/lowking/Scripts",
 }
+
+// #region zzz-credential
+// 绝区零每日奖励凭据自愈：stoken 兑换 cookie_token，再用角色接口自动解析 uid/region。
+// 依据 UIGF-org/mihoyo-api-collect 的用户 Token 文档与同类实现（sign-task / MihoyoBBSTools）。
+// 这里只放纯逻辑，HTTP 由调用方注入，便于脱离 Loon 做回归测试。
+const ZZZ_TAKUMI_API = 'https://api-takumi.mihoyo.com'
+const ZZZ_ROLE_BIZ = 'nap_cn'
+const ZZZ_DEFAULT_REGION = 'prod_gf_cn'
+const ZZZ_TAKUMI_UA = 'Mozilla/5.0 (Linux; Android 13; 22011211C Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/104.0.5112.97 Mobile Safari/537.36 miHoYoBBS/2.81.1'
+const ZZZ_COOKIE_ORDER = ['mid', 'stoken', 'stuid', 'account_id', 'cookie_token', 'ltuid', 'ltoken', 'ltmid_v2', 'account_id_v2', 'cookie_token_v2', 'ltuid_v2', 'ltoken_v2']
+const ZZZ_ACCOUNT_UID_FIELDS = ['account_id', 'stuid', 'ltuid', 'login_uid', 'account_id_v2', 'ltuid_v2']
+const ZZZ_STOKEN_FIELDS = ['stoken', 'stoken_v2']
+const ZZZ_MID_FIELDS = ['mid', 'account_mid_v2', 'ltmid_v2', 'account_mid']
+
+const zzzCookieMap = (cookie) => {
+    const map = {}
+    String(cookie || '').split(';').forEach((part) => {
+        const i = part.indexOf('=')
+        if (i <= 0) return
+        const key = part.slice(0, i).trim()
+        if (key) map[key] = part.slice(i + 1).trim()
+    })
+    return map
+}
+
+const zzzCookieValue = (cookie, names) => {
+    const map = zzzCookieMap(cookie)
+    for (const name of names || []) {
+        if (map[name]) return map[name]
+    }
+    return ''
+}
+
+// 只输出字段名，便于排障又不泄露任何凭据值。
+const zzzCookieFieldNames = (cookie) => Object.keys(zzzCookieMap(cookie)).join('、')
+
+const zzzBuildDailyCookie = ({ mid, stoken, accountId, cookieToken }) => {
+    const map = {}
+    if (mid) map.mid = mid
+    if (stoken) map.stoken = stoken
+    if (accountId) map.account_id = accountId
+    if (cookieToken) map.cookie_token = cookieToken
+    return ZZZ_COOKIE_ORDER.filter((key) => map[key]).map((key) => `${key}=${map[key]}`).join('; ')
+}
+
+const zzzTakumiHeaders = (cookie) => ({
+    cookie,
+    'referer': 'https://app.mihoyo.com',
+    'user-agent': ZZZ_TAKUMI_UA,
+    'x-rpc-app_id': 'bll8iq97cem8',
+})
+
+// GET /auth/api/getCookieAccountInfoBySToken：stoken 兑换 cookie_token
+const zzzMintCookieToken = async (http, { stoken, mid, uid }) => {
+    if (!stoken) return { ok: false, message: '缺少 stoken' }
+    const cookie = [`stoken=${stoken}`].concat(mid ? [`mid=${mid}`] : []).concat(uid ? [`stuid=${uid}`] : []).join('; ')
+    const query = [`stoken=${encodeURIComponent(stoken)}`].concat(uid ? [`uid=${encodeURIComponent(uid)}`] : []).join('&')
+    const res = await http(`${ZZZ_TAKUMI_API}/auth/api/getCookieAccountInfoBySToken?${query}`, zzzTakumiHeaders(cookie))
+    const body = res && res.data
+    if (!body) return { ok: false, message: res && res.error ? `stoken 兑换请求失败：${res.error}` : 'stoken 兑换无响应' }
+    if (body.retcode !== 0) return { ok: false, message: `stoken 兑换失败：${body.message || ''}(${body.retcode})` }
+    const data = body.data || {}
+    return { ok: true, cookieToken: data.cookie_token || '', uid: String(data.uid || uid || '') }
+}
+
+// GET /binding/api/getUserGameRolesByCookie：校验凭据并解析 uid/region
+const zzzLookupZzzRole = async (http, cookie, preferredUid) => {
+    const url = `${ZZZ_TAKUMI_API}/binding/api/getUserGameRolesByCookie?game_biz=${ZZZ_ROLE_BIZ}`
+    const res = await http(url, zzzTakumiHeaders(cookie))
+    const body = res && res.data
+    if (!body) return { ok: false, message: res && res.error ? `角色查询请求失败：${res.error}` : '角色查询无响应' }
+    if (body.retcode !== 0) return { ok: false, message: `凭据不可用：${body.message || ''}(${body.retcode})` }
+    const list = (body.data && body.data.list) || []
+    if (!list.length) return { ok: false, message: '该账号下没有绝区零角色' }
+    const matched = list.filter((role) => String(role.game_uid || '') === String(preferredUid || ''))[0]
+    const role = matched || list[0]
+    return {
+        ok: true,
+        uid: String(role.game_uid || ''),
+        region: role.region || ZZZ_DEFAULT_REGION,
+        nickname: role.nickname || '',
+        total: list.length,
+    }
+}
+
+// 依次尝试：stoken 自动刷新 → 已存 Cookie；每个候选都先校验凭据再验证签到接口。
+const zzzResolveDailyCredential = async (http, opts) => {
+    const options = opts || {}
+    const preferredUid = String(options.uid || '').trim()
+    const storedCookie = String(options.cookie || '').trim()
+    const stoken = String(options.stoken || '').trim()
+    const mid = String(options.mid || '').trim()
+    const accountUid = zzzCookieValue(storedCookie, ZZZ_ACCOUNT_UID_FIELDS)
+    const attempts = []
+    const candidates = []
+
+    if (stoken) {
+        const minted = await zzzMintCookieToken(http, { stoken, mid, uid: accountUid })
+        attempts.push(minted.ok ? 'stoken 兑换 cookie_token 成功' : minted.message)
+        if (minted.ok) {
+            candidates.push({
+                source: 'stoken 自动刷新',
+                cookie: zzzBuildDailyCookie({
+                    mid,
+                    stoken,
+                    accountId: minted.uid || accountUid,
+                    cookieToken: minted.cookieToken,
+                }),
+            })
+        }
+    } else {
+        attempts.push('未捕获到 stoken')
+    }
+    if (storedCookie) candidates.push({ source: '已存每日奖励Cookie', cookie: storedCookie })
+
+    for (const candidate of candidates) {
+        const role = await zzzLookupZzzRole(http, candidate.cookie, preferredUid)
+        if (!role.ok) {
+            attempts.push(`${candidate.source}：${role.message}`)
+            continue
+        }
+        const info = options.verify ? await options.verify(candidate.cookie, role) : { retcode: 0 }
+        if (info && info.retcode === 0) {
+            return {
+                ok: true,
+                source: candidate.source,
+                cookie: candidate.cookie,
+                uid: role.uid,
+                region: role.region,
+                nickname: role.nickname,
+                info,
+                attempts,
+            }
+        }
+        attempts.push(`${candidate.source}：签到接口返回 ${(info && info.message) || ''}(${(info && info.retcode)})`)
+    }
+
+    return { ok: false, attempts, cookieFields: zzzCookieFieldNames(storedCookie) || '(空)' }
+}
+
+if (typeof module !== 'undefined') {
+    module.exports = {
+        ZZZ_TAKUMI_API,
+        ZZZ_DEFAULT_REGION,
+        zzzCookieMap,
+        zzzCookieValue,
+        zzzCookieFieldNames,
+        zzzBuildDailyCookie,
+        zzzTakumiHeaders,
+        zzzMintCookieToken,
+        zzzLookupZzzRole,
+        zzzResolveDailyCredential,
+    }
+}
+// #endregion zzz-credential
+
+// 供上面的凭据逻辑使用：把 Loon 的 lk.get 包成 Promise
+const zzzHttpGetJson = (url, headers) => new Promise((resolve) => {
+    lk.get({ url, headers }, (error, _response, data) => {
+        if (error) {
+            lk.log(`请求失败：${url} - ${error && error.error ? error.error : error}`)
+            return resolve({ error: String((error && error.error) || error) })
+        }
+        try {
+            resolve({ data: ('' + data).o() })
+        } catch (e) {
+            lk.log(`响应解析失败：${url}`)
+            resolve({ error: '响应解析失败' })
+        }
+    })
+})
+
+const zzzStokenValue = () => (lk.getVal(zzzStokenKey)
+    || zzzCookieValue(zzzCookie, ZZZ_STOKEN_FIELDS)
+    || zzzCookieValue(zzzBbsCookie, ZZZ_STOKEN_FIELDS)
+    || '').trim()
+
+const zzzMidValue = () => (lk.getVal(zzzMidKey)
+    || zzzCookieValue(zzzCookie, ZZZ_MID_FIELDS)
+    || zzzCookieValue(zzzBbsCookie, ZZZ_MID_FIELDS)
+    || '').trim()
 
 const getDailyRewardHeaders = (cookie, dfp, body) => {
     const headers = {
@@ -220,9 +416,9 @@ const getDailyRewardHeaders = (cookie, dfp, body) => {
     return headers
 }
 
-const signIn = async (title, uid, cookie, dfp) => new Promise((resolve, _reject) => {
+const signIn = async (title, uid, cookie, dfp, region = ZZZ_DEFAULT_REGION) => new Promise((resolve, _reject) => {
     lk.log(title)
-    let body = {"act_id": "e202406242138391", "region": "prod_gf_cn", "uid": "" + uid, "lang": "zh-cn"}.s()
+    let body = {"act_id": "e202406242138391", "region": region, "uid": "" + uid, "lang": "zh-cn"}.s()
     lk.post({
         url: `${domain}/sign`,
         headers: getDailyRewardHeaders(cookie, dfp, body),
@@ -407,10 +603,10 @@ const share = (title, postId, cookie, dfp) => new Promise((resolve, _reject) => 
     })
 })
 
-const getZzzInfo = async (title, uid, cookie, dfp) => new Promise((resolve, _reject) => {
+const getZzzInfo = async (title, uid, cookie, dfp, region = ZZZ_DEFAULT_REGION) => new Promise((resolve, _reject) => {
     lk.log(title)
     lk.get({
-        url: `${domain}/info?lang=zh-cn&act_id=e202406242138391&region=prod_gf_cn&uid=${uid}`,
+        url: `${domain}/info?lang=zh-cn&act_id=e202406242138391&region=${region}&uid=${uid}`,
         headers: getDailyRewardHeaders(cookie, dfp)
     }, async (error, _response, data) => {
         try {
@@ -551,16 +747,6 @@ const doCloudLogin = async () => {
 
 const doSignIn = async () => {
     const taskName = '绝区零每日奖励签到'
-    const missing = []
-    if (!zzzUid) missing.push("UID")
-    if (!zzzCookie) missing.push("每日奖励Cookie")
-    else if (!hasDailyRewardCookie(zzzCookie)) missing.push("有效的每日奖励Cookie")
-    if (!zzzDfp) missing.push("设备指纹")
-    if (missing.length > 0) {
-        lk.execFail()
-        lk.appendNotifyInfo(`❌${taskName}失败：缺少${missing.join("、")}，请先打开绝区零每日签到页重新抓取`)
-        return false
-    }
     // 签到有验证码，配置n天后继续签到
     if (signInCountDownAmount > 0) {
         signInCountDownAmount--
@@ -569,19 +755,40 @@ const doSignIn = async () => {
         lk.execFail()
         return false
     }
-    let title = `获取${taskName}信息`
-    const info = await getZzzInfo(title, zzzUid, zzzCookie, zzzDfp)
-    lk.log(info?.s ? info.s() : info)
-    if (info?.retcode != 0) {
+    // 凭据自愈：优先用 stoken 现换 cookie_token 并自动解析角色，失败再退回已抓取的 Cookie
+    const stoken = zzzStokenValue()
+    const cred = await zzzResolveDailyCredential(zzzHttpGetJson, {
+        uid: zzzUid,
+        cookie: zzzCookie,
+        stoken,
+        mid: zzzMidValue(),
+        verify: (cookie, role) => getZzzInfo(`获取${taskName}信息`, role.uid, cookie, zzzDfp, role.region),
+    })
+    if (!cred.ok) {
         lk.execFail()
-        lk.appendNotifyInfo(`❌${taskName}失败：${info?.message || '获取签到信息异常，请重新获取Cookie后再试'}`)
+        lk.appendNotifyInfo(`❌${taskName}失败：${cred.attempts.join("；")}`)
+        if (!stoken) {
+            lk.appendNotifyInfo(`💡未捕获到 stoken，无法自动续签。请在米游社内打开绝区零游戏中心或重新登录一次（保持「Cookie 抓取」开启），让脚本保存 stoken`)
+        } else {
+            lk.log(`已存 Cookie 字段：${cred.cookieFields}`)
+        }
         return false
     }
+    lk.log(`凭据来源：${cred.source}；UID：${cred.uid}；region：${cred.region}；昵称：${cred.nickname}`)
+    if (cred.uid && cred.uid !== zzzUid) {
+        zzzUid = cred.uid
+        lk.setVal(zzzUidKey, cred.uid)
+    }
+    const info = cred.info
+    lk.log(info?.s ? info.s() : info)
     if (info?.data?.is_sign) {
         lk.appendNotifyInfo(`⚠️${taskName}已经签到过了`)
         return true
     }
-    const signRet = await signIn(taskName, zzzUid, zzzCookie, zzzDfp)
+    if (!zzzDfp && !zzzDeviceId) {
+        lk.appendNotifyInfo(`ℹ️未捕获设备指纹与设备ID，本次请求更容易触发风控`)
+    }
+    const signRet = await signIn(taskName, cred.uid, cred.cookie, zzzDfp, cred.region)
     if (signRet?.retcode != 0) {
         lk.execFail()
         lk.appendNotifyInfo(`❌${taskName}失败：${signRet?.message}`)

@@ -2,18 +2,24 @@
  * 绝区零 / 米游社 Cookie capture for Loon
  * Stores the keys used by lowking's zzz.js:
  * zzzUidKey, zzzCookieKey, zzzDfpKey, zzzBbsCookieKey, appVersionKey
+ * 以及长期凭据 zzzStokenKey / zzzMidKey（用于脚本自动续签每日奖励）
  */
 const NAME = "绝区零Cookie";
 const KEYS = {
   uid: "zzzUidKey",
   signCookie: "zzzCookieKey",
   bbsCookie: "zzzBbsCookieKey",
+  stoken: "zzzStokenKey",
+  mid: "zzzMidKey",
   dfp: "zzzDfpKey",
   appVersion: "appVersionKey",
   deviceId: "zzzDeviceIdKey",
   deviceModel: "zzzDeviceModelKey",
   deviceName: "zzzDeviceNameKey",
 };
+
+const STOKEN_FIELDS = ["stoken", "stoken_v2"];
+const MID_FIELDS = ["mid", "account_mid_v2", "ltmid_v2", "account_mid"];
 
 
 function read(key) {
@@ -78,6 +84,20 @@ function looksLikeMihoyoCookie(cookie) {
   return /(ltoken|ltuid|stoken|stuid|account_id|account_mid|cookie_token|login_ticket)/i.test(cookie || "");
 }
 
+function cookieField(cookie, names) {
+  const map = {};
+  String(cookie || "").split(";").forEach((part) => {
+    const i = part.indexOf("=");
+    if (i <= 0) return;
+    const key = part.slice(0, i).trim();
+    if (key) map[key] = part.slice(i + 1).trim();
+  });
+  for (const name of names) {
+    if (map[name]) return map[name];
+  }
+  return "";
+}
+
 function looksLikeDailyRewardCookie(cookie) {
   return looksLikeMihoyoCookie(cookie)
     && /(?:cookie_token|account_id)(?:_v2)?=/i.test(cookie || "");
@@ -129,12 +149,21 @@ function done(value) {
     write(KEYS.bbsCookie, cookie, "米游社Cookie", updates);
   }
 
+  // 长期凭据：任何被拦截请求里出现 stoken/mid 都保存下来，供脚本自动续签每日奖励
+  if (cookie && looksLikeMihoyoCookie(cookie)) {
+    const stoken = cookieField(cookie, STOKEN_FIELDS);
+    if (stoken) write(KEYS.stoken, stoken, "米游社SToken", updates);
+    const mid = cookieField(cookie, MID_FIELDS);
+    if (mid) write(KEYS.mid, mid, "账号Mid", updates);
+  }
+
   if (updates.length > 0) {
     const missing = [];
     if (!read(KEYS.uid)) missing.push("UID");
     if (!read(KEYS.signCookie)) missing.push("每日奖励Cookie");
     if (!read(KEYS.bbsCookie)) missing.push("米游社Cookie");
     if (!read(KEYS.dfp)) missing.push("设备指纹");
+    if (!read(KEYS.stoken)) missing.push("SToken");
     const suffix = missing.length ? `；还缺：${missing.join("、")}` : "；必要参数已齐";
     notify("✅ 获取成功", `${updates.join("、")} 已保存${suffix}`);
   }
