@@ -837,7 +837,7 @@ function huaduVideoItem(vod) {
   var description = sub || tag || actor || "";
   var link = huaduDetailLink(id);
   var item = {
-    id: "huadu:" + id,
+    id: link,
     type: "url",
     mediaType: "movie",
     title: name,
@@ -921,7 +921,7 @@ function huaduParseCards(html) {
     );
     var link = huaduDetailLink(id);
     var item = {
-      id: "huadu:" + id,
+      id: link,
       type: "url",
       mediaType: "movie",
       title: huaduCleanText(huaduAttribute(tag, "title")) || "花都影视 #" + id,
@@ -1006,7 +1006,7 @@ function huaduParseDetail(html, id) {
 
   var link = huaduDetailLink(id);
   var item = {
-    id: "huadu:" + id,
+    id: link,
     type: "url",
     mediaType: "movie",
     title: title || "花都影视 #" + id,
@@ -1153,7 +1153,7 @@ async function search(params) {
     if (picture && /\/no\.jpg$/i.test(picture)) picture = "";
     var link = huaduDetailLink(entry.id);
     candidates.push({
-      id: "huadu:" + entry.id,
+      id: link,
       type: "url",
       mediaType: "movie",
       title: huaduCleanText(entry.name) || "花都影视 #" + entry.id,
