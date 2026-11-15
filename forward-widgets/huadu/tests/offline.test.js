@@ -236,16 +236,14 @@ test("列表：JSON 映射为 VideoItem 字段", async function () {
   const items = await api.loadLatest({ page: 1 });
   assert.strictEqual(items.length, 2);
   const first = items[0];
-  assert.match(first.id, /^https:\/\/ab\.hdfby\.com\/index\.php\/voddetail\/27916\.html\?/);
+  assert.strictEqual(first.id, "huadu:27916");
   assert.strictEqual(first.type, "url");
-  assert.strictEqual(first.link, first.id);
-  assert.ok(first.link.indexOf("bf_title=") >= 0);
-  assert.ok(first.link.indexOf("bf_cover=") >= 0);
+  assert.strictEqual(first.link, "huadu://vod/27916");
   assert.strictEqual(first.title.indexOf("MKMP-716"), 0);
   assert.strictEqual(first.originalTitle, undefined);
   assert.strictEqual(first.coverUrl, "https://pic.3010.top/upload/vod/20260918-1/27916.jpg");
-  assert.strictEqual(first.posterPath, undefined);
-  assert.strictEqual(first.backdropPath, undefined);
+  assert.strictEqual(first.posterPath, first.coverUrl);
+  assert.strictEqual(first.backdropPath, first.coverUrl);
   assert.strictEqual(first.durationText, "03:03:21");
   assert.strictEqual(first.duration, 3 * 3600 + 3 * 60 + 21);
   assert.strictEqual(first.genreTitle, "中字无码");
@@ -298,8 +296,8 @@ test("搜索：关键词走 wd 查询参数（不放进路径段）", async func
   const api = loadModule(runtime.widget).api;
   const items = await api.search({ keyword: "MKMP", page: 2 });
   assert.strictEqual(items.length, 2);
-  assert.strictEqual(api.huaduExtractId(items[0].id), "27916");
-  assert.strictEqual(api.huaduExtractId(items[1].id), "27905");
+  assert.strictEqual(items[0].id, "huadu:27916");
+  assert.strictEqual(items[1].id, "huadu:27905");
   assert.strictEqual(items[0].coverUrl, "https://pic.3010.top/upload/vod/a.jpg");
   assert.strictEqual(items[0].description, "03:03:21");
 
@@ -329,9 +327,9 @@ test("搜索降级：搜索页 5xx 时走 suggest，并丢弃已下架死链", a
   const api = loadModule(runtime.widget).api;
   const items = await api.search({ keyword: "MKMP-751", page: 1 });
   assert.ok(searchAttempts >= 1, "应先尝试搜索页");
-  const ids = items.map((i) => api.huaduExtractId(i.id));
-  assert.ok(ids.indexOf("27916") >= 0, "存活条目应保留：" + ids.join(","));
-  assert.ok(ids.indexOf("29487") < 0, "已下架条目应被丢弃：" + ids.join(","));
+  const ids = items.map((i) => i.id);
+  assert.ok(ids.indexOf("huadu:27916") >= 0, "存活条目应保留：" + ids.join(","));
+  assert.ok(ids.indexOf("huadu:29487") < 0, "已下架条目应被丢弃：" + ids.join(","));
 });
 
 test("搜索降级：页面结构变化（无计数标记也无卡片）时改走 suggest", async function () {
@@ -346,7 +344,7 @@ test("搜索降级：页面结构变化（无计数标记也无卡片）时改�
   const api = loadModule(runtime.widget).api;
   const items = await api.search({ keyword: "MKMP", page: 1 });
   assert.strictEqual(items.length, 1);
-  assert.strictEqual(api.huaduExtractId(items[0].id), "27916");
+  assert.strictEqual(items[0].id, "huadu:27916");
   const suggestUsed = runtime.state.calls.filter((c) => c.url.indexOf("/ajax/suggest") >= 0);
   assert.strictEqual(suggestUsed.length, 1, "结构异常时应走 suggest");
 });
@@ -387,7 +385,7 @@ test("宿主形态兼容：JSON 已被宿主解析成对象时列表照常工作
   const api = loadModule(runtime.widget).api;
   const items = await api.loadLatest({ page: 1 });
   assert.strictEqual(items.length, 1);
-  assert.strictEqual(api.huaduExtractId(items[0].id), "27916");
+  assert.strictEqual(items[0].id, "huadu:27916");
 });
 
 test("宿主形态兼容：无包装字段 / status 命名 / body 字段都能识别", async function () {
@@ -457,40 +455,22 @@ test("详情：字段解析 + 猜你喜欢相关条目", async function () {
     },
   });
   const api = loadModule(runtime.widget).api;
-  const item = await api.loadDetail("https://ab.hdfby.com/index.php/voddetail/27916.html");
-  assert.strictEqual(api.huaduExtractId(item.id), "27916");
-  assert.strictEqual(item.link, item.id);
+  const item = await api.loadDetail("huadu://vod/27916");
+  assert.strictEqual(item.id, "huadu:27916");
+  assert.strictEqual(item.link, "huadu://vod/27916");
   assert.strictEqual(item.title, "MKMP-716 详情标题-女演员");
   assert.strictEqual(item.coverUrl, "https://pic.3010.top/upload/vod/20260821-1/aaa.jpg");
   assert.strictEqual(item.detailPoster, item.coverUrl);
-  assert.strictEqual(item.posterPath, undefined);
-  assert.strictEqual(item.backdropPath, undefined);
+  assert.strictEqual(item.posterPath, item.coverUrl);
+  assert.strictEqual(item.backdropPath, item.coverUrl);
   assert.strictEqual(item.releaseDate, "2026-09-18");
   assert.strictEqual(item.durationText, "03:03:21");
   assert.strictEqual(item.genreTitle, "中字无码");
   assert.ok(item.description.indexOf("口交") >= 0, "标签应进入 description：" + item.description);
   assert.ok(item.description.indexOf("演员甲") >= 0, "演员应进入 description：" + item.description);
   assert.strictEqual(item.relatedItems.length, 2);
-  assert.strictEqual(api.huaduExtractId(item.relatedItems[0].id), "13470");
+  assert.strictEqual(item.relatedItems[0].id, "huadu:13470");
   assert.strictEqual(item.playPath, "27916-1-1");
-});
-
-test("详情优先还原列表携带的标题和封面身份", async function () {
-  const runtime = createWidget({
-    routes: {
-      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
-      "/index.php/voddetail/27916.html": { statusCode: 200, data: DETAIL_HTML },
-    },
-  });
-  const api = loadModule(runtime.widget).api;
-  const link = "https://ab.hdfby.com/index.php/voddetail/27916.html?bf_title=所选列表标题&bf_cover=" +
-    encodeURIComponent("https://images.example/selected.jpg") + "&bf_description=" + encodeURIComponent("所选简介");
-  const item = await api.loadDetail(link);
-  assert.strictEqual(item.title, "所选列表标题");
-  assert.strictEqual(item.coverUrl, "https://images.example/selected.jpg");
-  assert.strictEqual(item.description, "所选简介");
-  assert.strictEqual(item.link, item.id);
-  assert.strictEqual(api.huaduExtractId(item.id), "27916");
 });
 
 test("详情封面：支持 Open Graph 与普通 img src 回退", async function () {

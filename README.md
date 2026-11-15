@@ -19,11 +19,11 @@
 - 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（30 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
 - 现网抽样（人工执行）：[`forward-widgets/huadu/tests/live-smoke.test.js`](forward-widgets/huadu/tests/live-smoke.test.js)
 - 类型：ForwardWidget 视频模块
-- 版本：`1.0.7`
+- 版本：`1.0.8`
 - 数据来源：站点自带 JSON 接口（列表/分类）+ SSR 详情页与播放页；不使用首页推荐 HTML
 - 功能：最新更新、分类浏览（16 个分类）、分页（站点上限 20 页 × 20 条）、搜索（搜索页为主，suggest 为降级并对死链做存活校验）、详情、m3u8 播放资源
 - 稳定性：从发布页 `js/config.js` 自动发现入口（纯文本解析，不使用 `eval`）、候选清单缓存、`lastGood` 记忆、同域重试、失败域 10 分钟冷却、内置候选域兜底；错误按类型区分，不把失败伪装成空数组
-- 修复：列表/详情缓存关闭；条目 URL 携带本条标题和封面以维持身份并清除旧匹配；移除错误的 `originalTitle` 外部匹配字段；不重复声明同一封面
+- 修复：恢复 Rex 已验证可调用的 `huadu://vod/{id}` 播放路由；保留 URL `type` 和 `loadDetail` 身份；移除误导外部匹配的 `originalTitle`；列表/详情恢复 `coverUrl`、`posterPath` 与详情海报字段
 - 安全：仅 https + 域名族白名单，拒绝凭据 / IP 字面量 / 本机与内网地址；不执行远端脚本
 - 内容提示：包含成人内容，仅供成年人使用
 

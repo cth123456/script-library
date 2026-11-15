@@ -31,7 +31,7 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.7",
+  version: "1.0.8",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
@@ -814,30 +814,7 @@ function huaduParseDurationSeconds(text) {
 }
 
 function huaduDetailLink(id) {
-  return "https://ab.hdfby.com/index.php/voddetail/" + huaduExtractId(id) + ".html";
-}
-
-function huaduLinkMetadata(link) {
-  var text = String(link || "");
-  function read(name) {
-    var match = text.match(new RegExp("[?&]bf_" + name + "=([^&#]*)", "i"));
-    if (!match) return "";
-    try {
-      return decodeURIComponent(match[1]).slice(0, 2000);
-    } catch (error) {
-      return match[1].slice(0, 2000);
-    }
-  }
-  return { title: read("title"), cover: read("cover"), description: read("description") };
-}
-
-function huaduItemLink(id, title, cover, description) {
-  var link = huaduDetailLink(id);
-  var params = [];
-  if (title) params.push("bf_title=" + encodeURIComponent(String(title).slice(0, 300)));
-  if (cover) params.push("bf_cover=" + encodeURIComponent(String(cover).slice(0, 1500)));
-  if (description) params.push("bf_description=" + encodeURIComponent(String(description).slice(0, 500)));
-  return params.length ? link + "?" + params.join("&") : link;
+  return "huadu://vod/" + huaduExtractId(id);
 }
 
 function huaduVideoItem(vod) {
@@ -858,15 +835,17 @@ function huaduVideoItem(vod) {
   var durationText = huaduCleanText(vod.vod_duration);
   var rating = Number(vod.vod_score);
   var description = sub || tag || actor || "";
-  var link = huaduItemLink(id, name, picture, description);
+  var link = huaduDetailLink(id);
   var item = {
-    id: link,
+    id: "huadu:" + id,
     type: "url",
     mediaType: "movie",
     title: name,
     link: link,
     description: description,
     coverUrl: picture,
+    posterPath: picture,
+    backdropPath: picture,
     releaseDate: huaduCleanText(vod.vod_time).slice(0, 10),
     rating: isNaN(rating) ? 0 : rating,
     durationText: durationText,
@@ -940,15 +919,16 @@ function huaduParseCards(html) {
     var remarks = huaduCleanText(
       huaduFirstMatch(block, /<span\b[^>]*class=["'][^"']*pic-text[^"']*["'][^>]*>([\s\S]*?)<\/span>/i)
     );
-    var title = huaduCleanText(huaduAttribute(tag, "title")) || "花都影视 #" + id;
-    var link = huaduItemLink(id, title, image, remarks);
+    var link = huaduDetailLink(id);
     var item = {
-      id: link,
+      id: "huadu:" + id,
       type: "url",
       mediaType: "movie",
-      title: title,
+      title: huaduCleanText(huaduAttribute(tag, "title")) || "花都影视 #" + id,
       link: link,
       coverUrl: image,
+      posterPath: image,
+      backdropPath: image,
     };
     if (remarks) item.description = remarks;
     results.push(item);
@@ -963,14 +943,12 @@ function huaduSearchResultCount(html) {
   return huaduToInt(count, -1);
 }
 
-function huaduParseDetail(html, id, sourceLink) {
+function huaduParseDetail(html, id) {
   var source = huaduDecodeHtml(String(html || ""));
-  var supplied = huaduLinkMetadata(sourceLink);
   var title = huaduCleanText(huaduFirstMatch(source, /<title>([\s\S]*?)<\/title>/i));
   var book = title.match(/《([^》]{1,120})》/);
   if (book) title = book[1];
   title = title.replace(/详情介绍[\s\S]*$/, "").trim();
-  if (supplied.title) title = supplied.title;
 
   var poster = huaduFirstMatch(source, /<meta\b[^>]*(?:property|name)=["'](?:og:image|twitter:image)["'][^>]*content=["']([^"']+)["']/i);
   if (!poster) poster = huaduFirstMatch(source, /<meta\b[^>]*content=["']([^"']+)["'][^>]*(?:property|name)=["'](?:og:image|twitter:image)["']/i);
@@ -982,7 +960,6 @@ function huaduParseDetail(html, id, sourceLink) {
     poster = huaduAttribute(detailImage, "data-original") || huaduAttribute(detailImage, "data-src") || huaduAttribute(detailImage, "src");
   }
   if (poster && /(?:\/no\.jpg|\/load\.gif)$/i.test(poster)) poster = "";
-  if (supplied.cover) poster = supplied.cover;
 
   // 详情页 meta 行固定为「<strong>标签：</strong>值</p>」，用固定正则逐项取
   var category = huaduCleanText(
@@ -1027,16 +1004,19 @@ function huaduParseDetail(html, id, sourceLink) {
     return huaduExtractId(card.id) !== String(id);
   });
 
-  var link = huaduItemLink(id, title, poster, supplied.description);
+  var link = huaduDetailLink(id);
   var item = {
-    id: link,
+    id: "huadu:" + id,
     type: "url",
     mediaType: "movie",
     title: title || "花都影视 #" + id,
     link: link,
-    description: supplied.description || description.join("\n"),
+    description: description.join("\n"),
     coverUrl: poster,
+    posterPath: poster,
     detailPoster: poster,
+    backdropPath: poster,
+    backdropPaths: poster ? [poster] : [],
     releaseDate: date,
     durationText: durationText,
     duration: huaduParseDurationSeconds(durationText),
@@ -1171,17 +1151,16 @@ async function search(params) {
     if (!entry || !entry.id) continue;
     var picture = String(entry.pic || "").trim();
     if (picture && /\/no\.jpg$/i.test(picture)) picture = "";
-    var title = huaduCleanText(entry.name) || "花都影视 #" + entry.id;
-    var description = huaduCleanText(entry.en);
-    var link = huaduItemLink(entry.id, title, picture, description);
+    var link = huaduDetailLink(entry.id);
     candidates.push({
-      id: link,
+      id: "huadu:" + entry.id,
       type: "url",
       mediaType: "movie",
-      title: title,
+      title: huaduCleanText(entry.name) || "花都影视 #" + entry.id,
       link: link,
-      description: description,
+      description: huaduCleanText(entry.en),
       coverUrl: picture,
+      posterPath: picture,
     });
   }
 
@@ -1222,7 +1201,7 @@ async function loadDetail(link) {
     console.log("[huadu] 详情不存在或已下架：" + id);
     return null;
   }
-  return huaduParseDetail(html, id, link);
+  return huaduParseDetail(html, id);
 }
 
 async function loadResource(params) {
