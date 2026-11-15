@@ -453,6 +453,7 @@ async function loadResource(params) {
       Origin: HUANGGUO_SITE,
       Referer: identity.referer,
     },
+    timeout: 20000,
   });
   var status = Number(response && (response.statusCode || response.status)) || 0;
   var envelope = response && response.data;
@@ -472,7 +473,7 @@ async function loadResource(params) {
   if (playback.manifest_method !== "GET" || typeof streamUrl !== "string" || !/^https:\/\//i.test(streamUrl)) return [];
   var headers = {};
   var cdn = playback.cdn || {};
-  if (/\.m3u8(?:[?#]|$)/i.test(streamUrl) && cdn.m3u8Enabled && cdn.authKey && cdn.authValue && cdn.app) {
+  if (cdn.otherEnabled && cdn.authKey && cdn.authValue && cdn.app) {
     headers[cdn.authKey] = cdn.authValue;
     headers["x-cdn-app"] = cdn.app;
   }
@@ -481,7 +482,7 @@ async function loadResource(params) {
     description: "HLS 播放资源（播放时实时获取）",
     url: streamUrl,
     playerType: "app",
-    customHeaders: headers,
+    customHeaders: Object.keys(headers).length ? headers : undefined,
   }];
 }
 

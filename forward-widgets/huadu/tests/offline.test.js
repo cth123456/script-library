@@ -238,6 +238,7 @@ test("列表：JSON 映射为 VideoItem 字段", async function () {
   assert.strictEqual(first.type, "url");
   assert.strictEqual(first.link, first.id);
   assert.strictEqual(first.title.indexOf("MKMP-716"), 0);
+  assert.strictEqual(first.originalTitle, undefined);
   assert.strictEqual(first.coverUrl, "https://pic.3010.top/upload/vod/20260918-1/27916.jpg");
   assert.strictEqual(first.durationText, "03:03:21");
   assert.strictEqual(first.duration, 3 * 3600 + 3 * 60 + 21);

@@ -95,7 +95,7 @@ test("播放时按剧集调用站点播放 API 并带 CDN 请求头", async func
         ep: 2,
         manifest_method: "GET",
         streams: { main: "https://cdn.example/stream.m3u8?sig=temporary" },
-        cdn: { m3u8Enabled: true, authKey: "x-cdn-auth", authValue: "temporary-auth", app: "150" },
+        cdn: { m3u8Enabled: true, otherEnabled: true, authKey: "x-cdn-auth", authValue: "temporary-auth", app: "150" },
       },
     },
   };
@@ -106,6 +106,28 @@ test("播放时按剧集调用站点播放 API 并带 CDN 请求头", async func
   assert.deepStrictEqual({ ...resources[0].customHeaders }, { "x-cdn-auth": "temporary-auth", "x-cdn-app": "150" });
   assert.match(calls.posts[0].url, /\/api\/videos\/123\/episodes\/2\/playback$/);
   assert.strictEqual(calls.posts[0].body, "{}");
+  assert.strictEqual(calls.posts[0].requestOptions.timeout, 20000);
+});
+
+test("分片不要求认证头时不向资源或第三方分片域发送 CDN 认证", async function () {
+  const { api } = loadModule({
+    post: async () => ({
+      statusCode: 200,
+      data: {
+        status: 1,
+        data: {
+          id: "123",
+          ep: 1,
+          manifest_method: "GET",
+          streams: { main: "https://cdn.example/stream.m3u8?sig=temporary" },
+          cdn: { m3u8Enabled: true, otherEnabled: false, authKey: "x-cdn-auth", authValue: "temporary-auth", app: "150" },
+        },
+      },
+    }),
+  });
+  const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
+  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources[0].customHeaders, undefined);
 });
 
 test("播放 API 返回其他剧集时拒绝错误地址", async function () {

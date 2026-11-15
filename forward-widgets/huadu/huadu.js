@@ -31,7 +31,7 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.5",
+  version: "1.0.6",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
@@ -822,7 +822,6 @@ function huaduVideoItem(vod) {
   var id = String(vod.vod_id);
   var name = huaduCleanText(vod.vod_name) || "花都影视 #" + id;
   var sub = huaduCleanText(vod.vod_sub);
-  var code = huaduCleanText(vod.vod_en);
   var tag = huaduCleanText(vod.vod_tag);
   var actor = huaduCleanText(vod.vod_actor);
   var picture = String(vod.vod_pic || "").trim();
@@ -855,7 +854,6 @@ function huaduVideoItem(vod) {
     item.genreTitle = typeName;
     item.genreItems = [{ id: typeId || typeName, title: typeName }];
   }
-  if (code) item.originalTitle = code;
   return item;
 }
 
