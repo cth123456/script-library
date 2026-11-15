@@ -31,7 +31,7 @@
 
 - 文件：[`forward-widgets/huangguo/huangguo.js`](forward-widgets/huangguo/huangguo.js)
 - 离线回归：[`forward-widgets/huangguo/tests/offline.test.js`](forward-widgets/huangguo/tests/offline.test.js)
-- 版本：`0.1.0`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
+- 版本：`0.1.1`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
 - 播放：详情只读剧集清单；用户选择剧集后请求 `/api/videos/{id}/episodes/{ep}/playback`，不把临时签名地址放入详情缓存
 - 分类：AI 换脸与 AI 魔改页面当前返回 HTTP 410，专题 `mingxing-huanlian` 与 `magic-drama` 也返回 410；新版本隐藏这些已下线入口，保留仍可访问的 AI 短剧、AI 漫剧、专题与榜单
 - 封面：兼容旧模块持久化的 `hg_cover_worker`；新安装可在 `coverWorker` 全局参数配置自己的封面解密 Worker
