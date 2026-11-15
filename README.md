@@ -16,7 +16,7 @@
 ### 花都影视（Huadu）
 
 - 文件：[`forward-widgets/huadu/huadu.js`](forward-widgets/huadu/huadu.js)
-- 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（26 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
+- 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（30 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
 - 现网抽样（人工执行）：[`forward-widgets/huadu/tests/live-smoke.test.js`](forward-widgets/huadu/tests/live-smoke.test.js)
 - 类型：ForwardWidget 视频模块
 - 版本：`1.0.4`
@@ -26,6 +26,16 @@
 - 修复：详情缓存关闭，避免不同影片详情被客户端复用；详情封面支持 Open Graph、`data-original`、`data-src` 和 `src`
 - 安全：仅 https + 域名族白名单，拒绝凭据 / IP 字面量 / 本机与内网地址；不执行远端脚本
 - 内容提示：包含成人内容，仅供成年人使用
+
+### 黄果短剧（HuangGuo）
+
+- 文件：[`forward-widgets/huangguo/huangguo.js`](forward-widgets/huangguo/huangguo.js)
+- 离线回归：[`forward-widgets/huangguo/tests/offline.test.js`](forward-widgets/huangguo/tests/offline.test.js)
+- 版本：`0.1.0`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
+- 播放：详情只读剧集清单；用户选择剧集后请求 `/api/videos/{id}/episodes/{ep}/playback`，不把临时签名地址放入详情缓存
+- 分类：AI 换脸与 AI 魔改页面当前返回 HTTP 410，专题 `mingxing-huanlian` 与 `magic-drama` 也返回 410；新版本隐藏这些已下线入口，保留仍可访问的 AI 短剧、AI 漫剧、专题与榜单
+- 封面：兼容旧模块持久化的 `hg_cover_worker`；新安装可在 `coverWorker` 全局参数配置自己的封面解密 Worker
+- 参考：Rex 加密格式说明见 [rex-widget-libs](https://github.com/baranwang/rex-widget-libs)；加密模块检查工具为 [rex-decrypt](https://rex-decrypt.pages.dev/)，不作为模块运行依赖
 
 ## Userscripts
 
