@@ -1,6 +1,6 @@
 /*
  * 花都影视（发布页：https://ab.hdfby.com/index.html）Forward / REX 模块
- * 版本：1.0.0（2026-09-19）
+ * 版本：1.0.4（2026-11-15）
  *
  * 数据来源（2026-09-19 实测验证）：
  *   - 列表/分类：GET {line}/index.php/ajax/data?mid=1&tid={1..16}&limit={10|20|30}&page={1..20}
@@ -31,7 +31,7 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.3",
+  version: "1.0.4",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
@@ -39,7 +39,7 @@ WidgetMetadata = {
   site: "https://ab.hdfby.com",
   // 图标放在与接口同源、实测可用的线路域上（发布页曾有 403 挑战，不适合当图标源）
   icon: "https://f7.hdys00.com/hdys/img/favicon.ico",
-  detailCacheDuration: 60,
+  detailCacheDuration: 0,
   modules: [
     {
       title: "最新更新",
@@ -945,12 +945,16 @@ function huaduParseDetail(html, id) {
   if (book) title = book[1];
   title = title.replace(/详情介绍[\s\S]*$/, "").trim();
 
-  var poster = huaduFirstMatch(
-    source,
-    /<img\b[^>]*class=["'][^"']*lazyload[^"']*["'][^>]*\bdata-original=["']([^"']+)["']/i
-  );
-  if (!poster) poster = huaduFirstMatch(source, /\bdata-original=["']([^"']+)["']/i);
-  if (poster && /\/no\.jpg$/i.test(poster)) poster = "";
+  var poster = huaduFirstMatch(source, /<meta\b[^>]*(?:property|name)=["'](?:og:image|twitter:image)["'][^>]*content=["']([^"']+)["']/i);
+  if (!poster) poster = huaduFirstMatch(source, /<meta\b[^>]*content=["']([^"']+)["'][^>]*(?:property|name)=["'](?:og:image|twitter:image)["']/i);
+  if (!poster) {
+    var detailAt = source.search(/<div\b[^>]*class=["'][^"']*stui-content__detail/i);
+    var detailBlock = detailAt >= 0 ? source.slice(detailAt, detailAt + 12000) : "";
+    var detailImageMatch = detailBlock.match(/<img\b[^>]*>/i);
+    var detailImage = detailImageMatch ? detailImageMatch[0] : "";
+    poster = huaduAttribute(detailImage, "data-original") || huaduAttribute(detailImage, "data-src") || huaduAttribute(detailImage, "src");
+  }
+  if (poster && /(?:\/no\.jpg|\/load\.gif)$/i.test(poster)) poster = "";
 
   // 详情页 meta 行固定为「<strong>标签：</strong>值</p>」，用固定正则逐项取
   var category = huaduCleanText(

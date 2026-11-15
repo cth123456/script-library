@@ -172,6 +172,7 @@ test("元数据：模块函数存在、loadResource 为 stream 且 cacheDuration
   const meta = loaded.metadata;
   assert.strictEqual(meta.id, "forward.huadu.vod");
   assert.strictEqual(typeof meta.version, "string");
+  assert.strictEqual(meta.detailCacheDuration, 0);
   const names = meta.modules.map((m) => m.functionName);
   for (const name of names) {
     assert.strictEqual(typeof loaded.api[name], "function", name + " 应是顶层函数");
@@ -462,6 +463,25 @@ test("详情：字段解析 + 猜你喜欢相关条目", async function () {
   assert.strictEqual(item.relatedItems.length, 2);
   assert.strictEqual(item.relatedItems[0].id, "huadu:13470");
   assert.strictEqual(item.playPath, "27916-1-1");
+});
+
+test("详情封面：支持 Open Graph 与普通 img src 回退", async function () {
+  const base = DETAIL_HTML.replace(/<img[^>]*class=["'][^"']*lazyload[^"']*["'][^>]*>/i, "").replace(
+    /<h3>猜你喜欢[\s\S]*$/,
+    '<a href="/voddetail/27916.html"></a></body></html>'
+  );
+  const ogImageHtml = base.replace("</head>", '<meta property="og:image" content="https://images.example/og.jpg"></head>');
+  const srcImageHtml = base.replace("</div>", '<img src="https://images.example/src.jpg"></div>');
+  for (const [html, expected] of [[ogImageHtml, "https://images.example/og.jpg"], [srcImageHtml, "https://images.example/src.jpg"]]) {
+    const runtime = createWidget({
+      routes: {
+        "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+        "/index.php/voddetail/27916.html": { statusCode: 200, data: html },
+      },
+    });
+    const item = await loadModule(runtime.widget).api.loadDetail("huadu://vod/27916");
+    assert.strictEqual(item.coverUrl, expected);
+  }
 });
 
 test("详情：占位页返回 null（不是空数组、不抛异常）", async function () {
