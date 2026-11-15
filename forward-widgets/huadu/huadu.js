@@ -31,7 +31,7 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.4",
+  version: "1.0.5",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
@@ -46,7 +46,7 @@ WidgetMetadata = {
       description: "按更新时间倒序（站点固定排序，不支持其它排序）",
       requiresWebView: false,
       functionName: "loadLatest",
-      cacheDuration: 600,
+      cacheDuration: 0,
       params: [
         { name: "page", title: "页码", type: "page", description: "1 - 20", value: "1" },
       ],
@@ -56,7 +56,7 @@ WidgetMetadata = {
       description: "一级/二级分类，来自站点导航实测映射",
       requiresWebView: false,
       functionName: "loadCategory",
-      cacheDuration: 900,
+      cacheDuration: 0,
       params: [
         {
           name: "category",
@@ -813,6 +813,10 @@ function huaduParseDurationSeconds(text) {
   return huaduToInt(match[1], 0) * 3600 + huaduToInt(match[2], 0) * 60 + huaduToInt(match[3], 0);
 }
 
+function huaduDetailLink(id) {
+  return "https://ab.hdfby.com/index.php/voddetail/" + huaduExtractId(id) + ".html";
+}
+
 function huaduVideoItem(vod) {
   if (!vod || !vod.vod_id) return null;
   var id = String(vod.vod_id);
@@ -831,12 +835,13 @@ function huaduVideoItem(vod) {
 
   var durationText = huaduCleanText(vod.vod_duration);
   var rating = Number(vod.vod_score);
+  var link = huaduDetailLink(id);
   var item = {
-    id: "huadu:" + id,
+    id: link,
     type: "url",
     mediaType: "movie",
     title: name,
-    link: "huadu://vod/" + id,
+    link: link,
     description: sub || tag || actor || "",
     coverUrl: picture,
     posterPath: picture,
@@ -915,12 +920,13 @@ function huaduParseCards(html) {
     var remarks = huaduCleanText(
       huaduFirstMatch(block, /<span\b[^>]*class=["'][^"']*pic-text[^"']*["'][^>]*>([\s\S]*?)<\/span>/i)
     );
+    var link = huaduDetailLink(id);
     var item = {
-      id: "huadu:" + id,
+      id: link,
       type: "url",
       mediaType: "movie",
       title: huaduCleanText(huaduAttribute(tag, "title")) || "花都影视 #" + id,
-      link: "huadu://vod/" + id,
+      link: link,
       coverUrl: image,
       posterPath: image,
       backdropPath: image,
@@ -999,12 +1005,13 @@ function huaduParseDetail(html, id) {
     return huaduExtractId(card.id) !== String(id);
   });
 
+  var link = huaduDetailLink(id);
   var item = {
-    id: "huadu:" + id,
+    id: link,
     type: "url",
     mediaType: "movie",
     title: title || "花都影视 #" + id,
-    link: "huadu://vod/" + id,
+    link: link,
     description: description.join("\n"),
     coverUrl: poster,
     posterPath: poster,
@@ -1145,12 +1152,13 @@ async function search(params) {
     if (!entry || !entry.id) continue;
     var picture = String(entry.pic || "").trim();
     if (picture && /\/no\.jpg$/i.test(picture)) picture = "";
+    var link = huaduDetailLink(entry.id);
     candidates.push({
-      id: "huadu:" + entry.id,
+      id: link,
       type: "url",
       mediaType: "movie",
       title: huaduCleanText(entry.name) || "花都影视 #" + entry.id,
-      link: "huadu://vod/" + entry.id,
+      link: link,
       description: huaduCleanText(entry.en),
       coverUrl: picture,
       posterPath: picture,
