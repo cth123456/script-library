@@ -450,7 +450,7 @@ test("详情：字段解析 + 猜你喜欢相关条目", async function () {
     },
   });
   const api = loadModule(runtime.widget).api;
-  const item = await api.loadDetail("huadu://vod/27916");
+  const item = await api.loadDetail("https://ab.hdfby.com/index.php/voddetail/27916.html");
   assert.strictEqual(item.id, "https://ab.hdfby.com/index.php/voddetail/27916.html");
   assert.strictEqual(item.link, item.id);
   assert.strictEqual(item.title, "MKMP-716 详情标题-女演员");
@@ -480,7 +480,7 @@ test("详情封面：支持 Open Graph 与普通 img src 回退", async function
         "/index.php/voddetail/27916.html": { statusCode: 200, data: html },
       },
     });
-    const item = await loadModule(runtime.widget).api.loadDetail("huadu://vod/27916");
+    const item = await loadModule(runtime.widget).api.loadDetail("https://ab.hdfby.com/index.php/voddetail/27916.html");
     assert.strictEqual(item.coverUrl, expected);
   }
 });
@@ -505,7 +505,7 @@ test("播放：player_data.url 两步解码为 m3u8", async function () {
     },
   });
   const api = loadModule(runtime.widget).api;
-  const resources = await api.loadResource({ link: "huadu://vod/27916" });
+  const resources = await api.loadResource({ link: "https://ab.hdfby.com/index.php/voddetail/27916.html" });
   assert.strictEqual(resources.length, 1);
   assert.strictEqual(resources[0].url, M3U8);
   assert.strictEqual(typeof resources[0].name, "string");
