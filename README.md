@@ -50,6 +50,19 @@
 - 上游项目：[MaYIHEI/paperclip app/wps](https://github.com/MaYIHEI/paperclip/tree/main/app/wps)
 - 注意：`wps_sid` 属于登录凭据，仅用于本人账号，不要公开日志或截图
 
+### 喜马拉雅极速版每日任务
+
+- 文件：[`userscripts/ximalaya/ximalaya-lite.js`](userscripts/ximalaya/ximalaya-lite.js)
+- Loon 插件：[`loon-plugins/ximalaya-lite.lpx`](loon-plugins/ximalaya-lite.lpx)
+- 类型：Loon 签到与看广告领畅听时长脚本
+- 版本：`1.0.0`
+- 功能：每日签到、阶段奖励宝箱、看广告领畅听时长（气泡领取 + 广告翻倍 `businessType` 7/6）、首页与宝箱奖励及翻倍、金币汇总
+- 签名：沿用官方 `RSA PKCS#1 v1.5` 公钥方案（1024-bit，纯 JS BigInt 实现，不依赖运行时 crypto）；`rsaSign` 已用真实私钥解密验证
+- 接口：`m.ximalaya.com/speed/task-center/*`、`m.ximalaya.com/speed/web-earn/*`、`mobile.ximalaya.com/pizza-category/activity/*`
+- Loon 用法：导入插件后保持「Cookie 抓取」开启，打开极速版福利页抓一次登录态后关闭；每日 08:10 自动执行
+- 上游参考：[Zero-S1/xmly_speed](https://github.com/Zero-S1/xmly_speed)（接口与签名方案）、[chavyleung/scripts](https://github.com/chavyleung/scripts)（脚本范式）
+- 注意：`1&_token` 属于登录凭据；气泡接口的 `listenTime` / `signature` 如失效，可在插件参数里替换为自己抓包得到的值
+
 ### BewlyCat for Stay
 
 - 文件：[`userscripts/bilibili/bewlycat-stay.user.js`](userscripts/bilibili/bewlycat-stay.user.js)

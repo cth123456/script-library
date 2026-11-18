@@ -1,0 +1,27 @@
+#!name=喜马拉雅极速版 · 每日任务与看广告领畅听
+#!desc=自动完成极速版福利中心任务：每日签到、阶段奖励、看广告领畅听时长（气泡 + 广告翻倍）、首页宝箱奖励。首次需开启抓取开关抓一次 Cookie。
+#!author=cth123456 (Loon wrapper), Zero-S1/xmly_speed (API), chavyleung (script style)
+#!homepage=https://github.com/cth123456/script-library/tree/main/userscripts/ximalaya
+#!icon=https://raw.githubusercontent.com/Orz-3/mini/master/Color/Ximalaya.png
+#!tag=签到,喜马拉雅,广告
+#!system=iOS,iPadOS
+#!loon_version=3.2.1(733)
+#!version=1.0.0
+#!date=2026-11-18
+
+[Argument]
+cookie_capture = switch,true,tag=Cookie 抓取,desc=开启后打开喜马拉雅极速版福利页即可刷新登录态，抓取成功后可关闭
+task_checkin = switch,true,tag=每日签到,desc=福利中心连续签到
+task_stage = switch,true,tag=阶段奖励,desc=每日听书阶段宝箱奖励
+task_ad_listen = switch,true,tag=看广告领畅听时长,desc=气泡领取 + 看广告翻倍，核心功能
+task_box = switch,true,tag=首页宝箱奖励,desc=首页与宝箱奖励，观看视频后翻倍
+bubble_listen_time = input,"41246",tag=气泡收听秒数,desc=如有抓包可替换为真实 listenTime
+bubble_signature = input,"2b1cc9e8831cff8874d9c",tag=气泡签名,desc=如有抓包可替换为真实 signature
+
+[MITM]
+hostname = m.ximalaya.com, mobile.ximalaya.com
+
+[Script]
+http-request ^https?:\/\/(?:m|mobile)\.ximalaya\.com\/ script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/ximalaya/ximalaya-lite.js, requires-body=false, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/Ximalaya.png, timeout=15, tag=喜马拉雅极速版 Cookie, enable={cookie_capture}
+
+cron "10 8 * * *" script-path=https://raw.githubusercontent.com/cth123456/script-library/main/userscripts/ximalaya/ximalaya-lite.js, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/Ximalaya.png, timeout=180, tag=喜马拉雅极速版每日任务, enable=true
