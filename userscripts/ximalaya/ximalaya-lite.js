@@ -80,7 +80,7 @@ function safeUrl(url) {
       try {
         decodedKey = decodeURIComponent(key.replace(/\+/g, " "));
       } catch (e) {}
-      return /token|sign|uid|user.?id|device|phone|mobile|session|account|cookie|auth/i.test(decodedKey)
+      return /token|sign|uid|user.?id|request.?id|device|phone|mobile|session|account|cookie|auth/i.test(decodedKey)
         ? `${key}=<redacted>`
         : part;
     })
@@ -89,7 +89,7 @@ function safeUrl(url) {
 }
 
 function redact(value, key) {
-  if (/(cookie|token|sign|authorization|uid|user.?id|device|phone|mobile|session|account)/i.test(key || "")) {
+  if (/(cookie|token|sign|authorization|uid|user.?id|request.?id|device|phone|mobile|session|account)/i.test(key || "")) {
     return "<redacted>";
   }
   if (Array.isArray(value)) return value.slice(0, 20).map((item) => redact(item, ""));
@@ -211,11 +211,12 @@ async function runTasks() {
   }
 
   const lines = [];
-  lines.push("注意：截图中的“看广告免费听 VIP 领时长”尚未执行；旧版气泡广告任务不等于此活动");
+  lines.push("说明：本脚本查询 VIP 专辑畅听活动进度；广告须由 App 播放，完成后由 App 提交奖励");
   const tasks = [
     ["签到", isOn("task_checkin"), () => checkin(cookie, uid)],
     ["阶段奖励", isOn("task_stage"), () => stageRewards(cookie)],
-    ["旧版收听气泡广告奖励", isOn("task_ad_listen"), () => adListen(cookie, uid)],
+    ["VIP专辑畅听进度", isOn("task_vip_duration"), () => vipDurationTask(cookie)],
+    ["旧版收听气泡广告任务", isOn("task_legacy_bubble"), () => adListen(cookie, uid)],
     ["宝箱奖励", isOn("task_box"), () => boxAward(cookie, uid)],
   ];
 
@@ -285,6 +286,26 @@ async function stageRewards(cookie) {
     await sleep(1200);
   }
   return got ? `领取 ${got} 档` : "暂无可领取";
+}
+
+async function vipDurationTask(cookie) {
+  const url = `https://m.ximalaya.com/lite-earn/ting/welfare/queryVipDurationTask/ts-${Date.now()}?`;
+  const result = await api(cookie, url, {
+    referer: "https://m.ximalaya.com/growth-ssr-speed-welfare-center/page/welfare",
+  });
+  const data = result && result.data;
+  if (!data) return "查询失败（响应缺少 data）";
+  if (data.showTask === false) return "当前账号/活动未开放";
+  if (!data.success || !Array.isArray(data.tierList)) {
+    return `查询失败（${result.errorMsg || result.msg || result.errorCode || "响应格式异常"}）`;
+  }
+
+  const tiers = data.tierList;
+  const done = tiers.filter((tier) => Number(tier.status) === 1).length;
+  const next = tiers.find((tier) => Number(tier.status) === 0);
+  if (!next) return `档位 ${done}/${tiers.length}，今日已领完`;
+  const reward = next.tierDurationDesc || `${Math.floor(Number(next.tierDuration || 0) / 60)} 分钟`;
+  return `档位 ${done}/${tiers.length}，下一档 ${reward}；需在 App 内看完广告领取`;
 }
 
 async function adListen(cookie, uid) {

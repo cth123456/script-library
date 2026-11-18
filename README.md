@@ -55,12 +55,12 @@
 - 文件：[`userscripts/ximalaya/ximalaya-lite.js`](userscripts/ximalaya/ximalaya-lite.js)
 - Loon 插件：[`loon-plugins/ximalaya-lite.lpx`](loon-plugins/ximalaya-lite.lpx)
 - 类型：Loon 极速版福利任务脚本（不提供 VIP 会员）
-- 版本：`1.0.2`
-- 功能：每日签到、阶段奖励宝箱、旧版收听气泡广告任务（气泡领取 + 广告翻倍 `businessType` 7/6）、首页与宝箱奖励及翻倍、金币汇总；不包含截图中的“看广告免费听 VIP 领时长”活动，也不提供 VIP 开通或会员试用
+- 版本：`1.0.3`
+- 功能：每日签到、阶段奖励宝箱、查询 VIP 专辑畅听活动档位与领取进度、首页与宝箱奖励及翻倍、金币汇总；旧版收听气泡广告任务默认关闭
 - 签名：沿用官方 `RSA PKCS#1 v1.5` 公钥方案（1024-bit，纯 JS BigInt 实现，不依赖运行时 crypto）；`rsaSign` 已用真实私钥解密验证
-- 接口：`m.ximalaya.com/speed/task-center/*`、`m.ximalaya.com/speed/web-earn/*`、`mobile.ximalaya.com/pizza-category/activity/*`
+- 接口：签到/旧气泡使用 `m.ximalaya.com/speed/*`；VIP 畅听进度使用 `m.ximalaya.com/lite-earn/ting/welfare/queryVipDurationTask/*`；宝箱使用 `mobile.ximalaya.com/pizza-category/activity/*`
 - Loon 用法：导入插件后保持「Cookie 抓取」开启，打开极速版福利页抓一次登录态后关闭；每日 08:10 自动执行；「活动接口诊断」会脱敏记录 `/lite-earn/` 等活动请求与响应，供适配当前活动
-- 限制：截图中的“看广告免费听 VIP 领时长”尚未接入；需从极速版实际点击“领时长”捕获该活动真实接口，旧版气泡广告任务不能替代
+- 活动流程：查询 `/lite-earn/ting/welfare/queryVipDurationTask/ts-{ts}`；App 经广告 SDK 完播回调后，用 `requestId`、`uid`、时间戳、可选的 `isSecondPhaseCompleted` 和应用配置盐值生成 MD5 签名，再 POST `/lite-earn/ting/welfare/rewardDuration/ts-{ts}`。Loon 脚本只查询进度，广告播放和发奖由 App 完成
 - 上游参考：[Zero-S1/xmly_speed](https://github.com/Zero-S1/xmly_speed)（接口与签名方案）、[chavyleung/scripts](https://github.com/chavyleung/scripts)（脚本范式）
 - 注意：`1&_token` 属于登录凭据；此任务奖励为免费畅听时长/金币，不会赠送 VIP。气泡接口的 `listenTime` / `signature` 如失效，可在插件参数里替换为自己抓包得到的值
 

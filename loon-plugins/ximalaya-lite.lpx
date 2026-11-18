@@ -1,12 +1,12 @@
-#!name=喜马拉雅极速版 · 每日任务与看广告领畅听
-#!desc=每日签到、阶段奖励、旧版收听气泡广告奖励与宝箱；截图中的“看广告免费听 VIP 领时长”尚待真实接口适配。可脱敏抓取活动请求响应。
+#!name=喜马拉雅极速版 · 每日任务与VIP畅听进度
+#!desc=每日签到、阶段奖励、VIP专辑畅听活动进度查询、宝箱任务。看广告须在 App 内完成，App 会在广告成功回调后领取时长；插件提供脱敏接口诊断。
 #!author=cth123456 (Loon wrapper), Zero-S1/xmly_speed (API), chavyleung (script style)
 #!homepage=https://github.com/cth123456/script-library/tree/main/userscripts/ximalaya
 #!icon=https://raw.githubusercontent.com/Orz-3/mini/master/Color/Ximalaya.png
 #!tag=签到,喜马拉雅,广告
 #!system=iOS,iPadOS
 #!loon_version=3.2.1(733)
-#!version=1.0.2
+#!version=1.0.3
 #!date=2026-11-18
 
 [Argument]
@@ -14,7 +14,8 @@ cookie_capture = switch,true,tag=Cookie 抓取,desc=开启后打开喜马拉雅�
 activity_capture = switch,true,tag=活动接口诊断,desc=临时记录福利活动请求和响应（敏感字段会脱敏），抓到“领时长”后可关闭
 task_checkin = switch,true,tag=每日签到,desc=福利中心连续签到
 task_stage = switch,true,tag=阶段奖励,desc=每日听书阶段宝箱奖励
-task_ad_listen = switch,true,tag=旧版收听气泡广告任务,desc=与“看广告免费听 VIP 领时长”活动不同
+task_vip_duration = switch,true,tag=VIP专辑畅听进度查询,desc=查询活动档位与领取进度；广告由 App 播放并领取奖励
+task_legacy_bubble = switch,false,tag=旧版收听气泡广告任务,desc=旧任务，与 VIP 专辑畅听活动无关
 task_box = switch,true,tag=首页宝箱奖励,desc=首页与宝箱奖励，观看视频后翻倍
 bubble_listen_time = input,"41246",tag=气泡收听秒数,desc=如有抓包可替换为真实 listenTime
 bubble_signature = input,"2b1cc9e8831cff8874d9c",tag=气泡签名,desc=如有抓包可替换为真实 signature
