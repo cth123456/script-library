@@ -56,11 +56,11 @@ function captureCookie() {
 
   $persistentStore.write(cookie, KEY_COOKIE);
   $notification.post(NAME, "Cookie 抓取成功", "已保存登录态，可以关闭抓取开关");
-  console.log(`[${NAME}] Cookie 已更新，uid=${uidOf(cookie)}`);
+  console.log(`[${NAME}] Cookie 已更新`);
 }
 
 function isActivityUrl(url) {
-  return /^https?:\/\/(?:m|mobile)\.ximalaya\.com\/(?:speed\/(?:web-earn|task-center)\/|pizza-category\/activity\/)/i.test(
+  return /^https?:\/\/(?:m|mobile)\.ximalaya\.com\/(?:lite-earn\/|speed\/(?:web-earn|task-center)\/|pizza-category\/activity\/)/i.test(
     String(url || "")
   );
 }
