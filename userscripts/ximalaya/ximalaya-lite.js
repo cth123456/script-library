@@ -14,6 +14,7 @@
 const NAME = "喜马拉雅极速版";
 const KEY_COOKIE = "xmly_speed_cookie";
 const KEY_LAST = "xmly_speed_last_result";
+const KEY_ACTIVITY_REQUEST = "xmly_speed_activity_request";
 
 const UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 iting/2.0.9 kdtunion_iting/1.0 iting(main)/2.0.9/ios_1";
@@ -25,7 +26,15 @@ const PUBKEY_E = "010001";
 const isRequest = typeof $request !== "undefined";
 
 !(async () => {
-  if (isRequest) return captureCookie();
+  if (typeof $response !== "undefined") {
+    captureActivityResponse();
+    return;
+  }
+  if (isRequest) {
+    captureCookie();
+    captureActivityRequest();
+    return;
+  }
   await runTasks();
 })()
   .catch((e) => {
@@ -48,6 +57,105 @@ function captureCookie() {
   $persistentStore.write(cookie, KEY_COOKIE);
   $notification.post(NAME, "Cookie 抓取成功", "已保存登录态，可以关闭抓取开关");
   console.log(`[${NAME}] Cookie 已更新，uid=${uidOf(cookie)}`);
+}
+
+function isActivityUrl(url) {
+  return /^https?:\/\/(?:m|mobile)\.ximalaya\.com\/(?:speed\/(?:web-earn|task-center)\/|pizza-category\/activity\/)/i.test(
+    String(url || "")
+  );
+}
+
+function safeUrl(url) {
+  const text = String(url || "").split("#")[0];
+  const at = text.indexOf("?");
+  if (at < 0) return text;
+  const base = text.slice(0, at);
+  const query = text
+    .slice(at + 1)
+    .split("&")
+    .map((part) => {
+      const eq = part.indexOf("=");
+      const key = eq < 0 ? part : part.slice(0, eq);
+      let decodedKey = key;
+      try {
+        decodedKey = decodeURIComponent(key.replace(/\+/g, " "));
+      } catch (e) {}
+      return /token|sign|uid|user.?id|device|phone|mobile|session|account|cookie|auth/i.test(decodedKey)
+        ? `${key}=<redacted>`
+        : part;
+    })
+    .join("&");
+  return `${base}?${query}`;
+}
+
+function redact(value, key) {
+  if (/(cookie|token|sign|authorization|uid|user.?id|device|phone|mobile|session|account)/i.test(key || "")) {
+    return "<redacted>";
+  }
+  if (Array.isArray(value)) return value.slice(0, 20).map((item) => redact(item, ""));
+  if (value && typeof value === "object") {
+    const out = {};
+    Object.keys(value).slice(0, 80).forEach((k) => {
+      out[k] = redact(value[k], k);
+    });
+    return out;
+  }
+  if (typeof value === "string") return value.slice(0, 300);
+  return value;
+}
+
+function parseBody(text) {
+  try {
+    return redact(JSON.parse(String(text || "")), "");
+  } catch (e) {
+    return text ? "<non-JSON body omitted>" : "";
+  }
+}
+
+function captureActivityRequest() {
+  if (!isActivityUrl($request.url)) return;
+  const record = {
+    phase: "request",
+    method: String($request.method || "GET").toUpperCase(),
+    url: safeUrl($request.url),
+    body: parseBody($request.body || ""),
+    capturedAt: Date.now(),
+  };
+  const pending = readActivityRequests();
+  pending[record.url] = record;
+  const keys = Object.keys(pending);
+  while (keys.length > 30) delete pending[keys.shift()];
+  $persistentStore.write(JSON.stringify(pending), KEY_ACTIVITY_REQUEST);
+  console.log(`[${NAME}] 活动请求诊断 ${JSON.stringify(record)}`);
+}
+
+function captureActivityResponse() {
+  const url = $request && $request.url;
+  if (!isActivityUrl(url)) return;
+  const responseUrl = safeUrl(url);
+  const pending = readActivityRequests();
+  const req = pending[responseUrl] || {};
+  delete pending[responseUrl];
+  $persistentStore.write(JSON.stringify(pending), KEY_ACTIVITY_REQUEST);
+  const record = {
+    phase: "response",
+    method: String(($request && $request.method) || req.method || "GET").toUpperCase(),
+    url: responseUrl,
+    status: Number(($response && ($response.status || $response.statusCode)) || 0),
+    requestBody: req.body,
+    responseBody: parseBody(($response && $response.body) || ""),
+    capturedAt: Date.now(),
+  };
+  console.log(`[${NAME}] 活动响应诊断 ${JSON.stringify(record)}`);
+}
+
+function readActivityRequests() {
+  try {
+    const value = JSON.parse($persistentStore.read(KEY_ACTIVITY_REQUEST) || "{}");
+    return value && typeof value === "object" ? value : {};
+  } catch (e) {
+    return {};
+  }
 }
 
 /* ---------------------------- 任务调度 ---------------------------- */
@@ -103,11 +211,11 @@ async function runTasks() {
   }
 
   const lines = [];
-  lines.push("奖励说明：本脚本领取免费畅听时长/金币，不会开通 VIP 会员");
+  lines.push("注意：截图中的“看广告免费听 VIP 领时长”尚未执行；旧版气泡广告任务不等于此活动");
   const tasks = [
     ["签到", isOn("task_checkin"), () => checkin(cookie, uid)],
     ["阶段奖励", isOn("task_stage"), () => stageRewards(cookie)],
-    ["看广告领时长", isOn("task_ad_listen"), () => adListen(cookie, uid)],
+    ["旧版收听气泡广告奖励", isOn("task_ad_listen"), () => adListen(cookie, uid)],
     ["宝箱奖励", isOn("task_box"), () => boxAward(cookie, uid)],
   ];
 
@@ -130,7 +238,7 @@ async function runTasks() {
 
   const body = lines.join("\n") || "没有启用任何任务";
   $persistentStore.write(body, KEY_LAST);
-  $notification.post(NAME, "每日任务完成", body);
+  $notification.post(NAME, "每日任务运行结束", body);
   console.log(`[${NAME}]\n${body}`);
 }
 
