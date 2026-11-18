@@ -135,13 +135,10 @@ async function runTasks() {
 
 /* ---------------------------- 具体任务 ---------------------------- */
 
-function headersFor(cookie, host, referer) {
+function headersFor(cookie, referer) {
   const h = {
-    Host: host,
     Accept: "application/json, text/plain, */*",
     "Accept-Language": "zh-cn",
-    "Accept-Encoding": "gzip, deflate, br",
-    Connection: "keep-alive",
     "User-Agent": UA,
     Cookie: cookie,
   };
@@ -244,13 +241,11 @@ async function boxAward(cookie, uid) {
 
   const box = await api(cookie, "https://mobile.ximalaya.com/pizza-category/activity/getAward?activtyId=baoxiangAward", {
     method: "POST",
-    host: "mobile.ximalaya.com",
   });
   if (box && box.ret === 0 && box.awardReceiveId) {
     await api(
       cookie,
-      `https://mobile.ximalaya.com/pizza-category/activity/awardMultiple?activtyId=baoxiangAward&awardReceiveId=${box.awardReceiveId}`,
-      { host: "mobile.ximalaya.com" }
+      `https://mobile.ximalaya.com/pizza-category/activity/awardMultiple?activtyId=baoxiangAward&awardReceiveId=${box.awardReceiveId}`
     );
     count += 1;
   }
@@ -260,12 +255,12 @@ async function boxAward(cookie, uid) {
     `https://mobile.ximalaya.com/pizza-category/activity/getAward?activtyId=indexSegAward` +
     `&ballKey=${encodeURIComponent(uid)}&currentTimeMillis=${ms}` +
     `&sawVideoSignature=${encodeURIComponent(`${ms}+${uid}`)}&version=2`;
-  const seg = await api(cookie, index, { host: "mobile.ximalaya.com" });
+  const seg = await api(cookie, index);
   if (seg && seg.ret === 0 && seg.awardReceiveId) {
     await api(
       cookie,
       `https://mobile.ximalaya.com/pizza-category/activity/awardMultiple?activtyId=indexSegAward&awardReceiveId=${seg.awardReceiveId}`,
-      { host: "mobile.ximalaya.com" }
+      {}
     );
     count += 1;
   }
@@ -286,8 +281,7 @@ async function wallet(cookie) {
 
 function api(cookie, url, opts) {
   const o = opts || {};
-  const host = o.host || "m.ximalaya.com";
-  const headers = headersFor(cookie, host, o.referer);
+  const headers = headersFor(cookie, o.referer);
   const req = { url, headers };
   if (o.body !== undefined) {
     headers["Content-Type"] = "application/json;charset=utf-8";
