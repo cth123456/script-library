@@ -103,6 +103,7 @@ async function runTasks() {
   }
 
   const lines = [];
+  lines.push("奖励说明：本脚本领取免费畅听时长/金币，不会开通 VIP 会员");
   const tasks = [
     ["签到", isOn("task_checkin"), () => checkin(cookie, uid)],
     ["阶段奖励", isOn("task_stage"), () => stageRewards(cookie)],
@@ -171,8 +172,8 @@ async function stageRewards(cookie) {
 
   for (let i = 0; i < stages.length; i++) {
     if (stages[i].status !== 1) continue;
-    await api(cookie, `${base}/stage-reward/receive?stage=${i + 1}`);
-    got += 1;
+    const result = await api(cookie, `${base}/stage-reward/receive?stage=${i + 1}`);
+    if (requestSucceeded(result)) got += 1;
     await sleep(1200);
   }
   return got ? `领取 ${got} 档` : "暂无可领取";
@@ -200,21 +201,25 @@ async function adListen(cookie, uid) {
   if (!live.length && !expired.length) return "暂无气泡（需先在 App 内听书一段时间）";
 
   let claimed = 0;
+  let adGranted = 0;
   for (const item of live) {
     const got = await api(cookie, `https://m.ximalaya.com/speed/web-earn/listen/receive/${item.id}`, {
       referer: "https://m.ximalaya.com/xmds-node-spa/apps/speed-growth-open-components/bubble",
     });
-    if (!got || got.errorCode === undefined) {
-      await adScore(cookie, uid, 7, item.id);
+    if (requestSucceeded(got)) {
       claimed += 1;
+      const score = await adScore(cookie, uid, 7, item.id);
+      if (requestSucceeded(score)) adGranted += 1;
     }
     await sleep(1500);
   }
   for (const item of expired) {
-    await adScore(cookie, uid, 6, item.id);
+    const score = await adScore(cookie, uid, 6, item.id);
+    if (requestSucceeded(score)) adGranted += 1;
     await sleep(1500);
   }
-  return claimed ? `领取并看广告 ${claimed} 个` : `处理 ${live.length + expired.length} 个气泡`;
+  if (!claimed && !adGranted) return `接口未确认到账（有效气泡 ${live.length}，过期气泡 ${expired.length}）`;
+  return `领取气泡 ${claimed} 个，广告奖励确认 ${adGranted} 个`;
 }
 
 async function adToken(cookie) {
@@ -243,11 +248,11 @@ async function boxAward(cookie, uid) {
     method: "POST",
   });
   if (box && box.ret === 0 && box.awardReceiveId) {
-    await api(
+    const doubled = await api(
       cookie,
       `https://mobile.ximalaya.com/pizza-category/activity/awardMultiple?activtyId=baoxiangAward&awardReceiveId=${box.awardReceiveId}`
     );
-    count += 1;
+    if (requestSucceeded(doubled)) count += 1;
   }
 
   const ms = Date.now() - 2;
@@ -257,12 +262,12 @@ async function boxAward(cookie, uid) {
     `&sawVideoSignature=${encodeURIComponent(`${ms}+${uid}`)}&version=2`;
   const seg = await api(cookie, index);
   if (seg && seg.ret === 0 && seg.awardReceiveId) {
-    await api(
+    const doubled = await api(
       cookie,
       `https://mobile.ximalaya.com/pizza-category/activity/awardMultiple?activtyId=indexSegAward&awardReceiveId=${seg.awardReceiveId}`,
       {}
     );
-    count += 1;
+    if (requestSucceeded(doubled)) count += 1;
   }
 
   return count ? `领取 ${count} 次（含翻倍）` : "暂无可领取";
@@ -302,6 +307,14 @@ function api(cookie, url, opts) {
     if (method === "POST") $httpClient.post(req, cb);
     else $httpClient.get(req, cb);
   });
+}
+
+function requestSucceeded(result) {
+  if (!result || result.errorCode !== undefined) return false;
+  if (result.ret !== undefined) return Number(result.ret) === 0;
+  if (result.code !== undefined) return Number(result.code) === 0 || Number(result.code) === 200;
+  if (result.success !== undefined) return result.success === true;
+  return result.raw === undefined && result.status >= 200 && result.status < 300;
 }
 
 function sleep(ms) {

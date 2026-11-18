@@ -54,14 +54,14 @@
 
 - 文件：[`userscripts/ximalaya/ximalaya-lite.js`](userscripts/ximalaya/ximalaya-lite.js)
 - Loon 插件：[`loon-plugins/ximalaya-lite.lpx`](loon-plugins/ximalaya-lite.lpx)
-- 类型：Loon 签到与看广告领畅听时长脚本
+- 类型：Loon 签到与看广告领畅听时长脚本（不提供 VIP 会员）
 - 版本：`1.0.0`
-- 功能：每日签到、阶段奖励宝箱、看广告领畅听时长（气泡领取 + 广告翻倍 `businessType` 7/6）、首页与宝箱奖励及翻倍、金币汇总
+- 功能：每日签到、阶段奖励宝箱、看广告领畅听时长（气泡领取 + 广告翻倍 `businessType` 7/6）、首页与宝箱奖励及翻倍、金币汇总；不包含 VIP 开通或会员试用
 - 签名：沿用官方 `RSA PKCS#1 v1.5` 公钥方案（1024-bit，纯 JS BigInt 实现，不依赖运行时 crypto）；`rsaSign` 已用真实私钥解密验证
 - 接口：`m.ximalaya.com/speed/task-center/*`、`m.ximalaya.com/speed/web-earn/*`、`mobile.ximalaya.com/pizza-category/activity/*`
 - Loon 用法：导入插件后保持「Cookie 抓取」开启，打开极速版福利页抓一次登录态后关闭；每日 08:10 自动执行
 - 上游参考：[Zero-S1/xmly_speed](https://github.com/Zero-S1/xmly_speed)（接口与签名方案）、[chavyleung/scripts](https://github.com/chavyleung/scripts)（脚本范式）
-- 注意：`1&_token` 属于登录凭据；气泡接口的 `listenTime` / `signature` 如失效，可在插件参数里替换为自己抓包得到的值
+- 注意：`1&_token` 属于登录凭据；此任务奖励为免费畅听时长/金币，不会赠送 VIP。气泡接口的 `listenTime` / `signature` 如失效，可在插件参数里替换为自己抓包得到的值
 
 ### BewlyCat for Stay
 
