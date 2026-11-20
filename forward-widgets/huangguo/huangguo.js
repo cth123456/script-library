@@ -3,7 +3,7 @@ WidgetMetadata = {
   title: "黄果短剧",
   description: "黄果短剧列表、分类、搜索、详情及按集实时取播放地址。",
   author: "Codex",
-  version: "0.1.1",
+  version: "0.1.2",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   site: "https://huangguoai.com",
@@ -440,21 +440,43 @@ async function loadResource(params) {
   params = params || {};
   var direct = String(params.videoUrl || params.url || "");
   if (direct && /^https:\/\//i.test(direct)) {
-    return [{ name: params.title || "黄果短剧", url: direct }];
+    var directHeaders = {};
+    if (params.customHeaders && typeof params.customHeaders === "object") {
+      for (var headerName in params.customHeaders) directHeaders[headerName] = String(params.customHeaders[headerName]);
+    }
+    return [{
+      name: params.title || "黄果短剧",
+      url: direct,
+      playerType: "app",
+      customHeaders: Object.keys(directHeaders).length ? directHeaders : undefined,
+    }];
   }
   var identity = hgResourceIdentity(params);
   if (!identity) return [];
   var endpoint = HUANGGUO_SITE + "/api/videos/" + identity.id + "/episodes/" + identity.episode + "/playback";
-  var response = await Widget.http.post(endpoint, "{}", {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36",
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Origin: HUANGGUO_SITE,
-      Referer: identity.referer,
-    },
-    timeout: 20000,
-  });
+  var commonHeaders = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36",
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    Origin: HUANGGUO_SITE,
+    Referer: identity.referer,
+  };
+  var response = null;
+  var lastError = null;
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      response = await Widget.http.post(endpoint, "{}", {
+        headers: commonHeaders,
+        timeout: 10000,
+      });
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      console.warn("黄果播放接口请求失败，重试一次", attempt + 1, error && error.message ? error.message : error);
+    }
+  }
+  if (lastError) return [];
   var status = Number(response && (response.statusCode || response.status)) || 0;
   var envelope = response && response.data;
   if (typeof envelope === "string") {
@@ -469,21 +491,34 @@ async function loadResource(params) {
     console.warn("黄果播放接口返回的剧集身份不匹配", identity.id, identity.episode);
     return [];
   }
-  var streamUrl = playback.streams && playback.streams.main;
-  if (playback.manifest_method !== "GET" || typeof streamUrl !== "string" || !/^https:\/\//i.test(streamUrl)) return [];
+  if (playback.manifest_method !== "GET" || !playback.streams || typeof playback.streams !== "object") return [];
+  var streamCandidates = [];
+  var streamNames = ["main", "hevc", "preview"];
+  for (var i = 0; i < streamNames.length; i++) {
+    var streamUrl = playback.streams[streamNames[i]];
+    if (typeof streamUrl === "string" && /^https:\/\//i.test(streamUrl) && streamCandidates.indexOf(streamUrl) < 0) {
+      streamCandidates.push(streamUrl);
+    }
+  }
+  if (!streamCandidates.length) return [];
   var headers = {};
   var cdn = playback.cdn || {};
   if (cdn.otherEnabled && cdn.authKey && cdn.authValue && cdn.app) {
     headers[cdn.authKey] = cdn.authValue;
     headers["x-cdn-app"] = cdn.app;
   }
-  return [{
-    name: "第 " + identity.episode + " 集",
-    description: "HLS 播放资源（播放时实时获取）",
-    url: streamUrl,
-    playerType: "app",
-    customHeaders: Object.keys(headers).length ? headers : undefined,
-  }];
+  headers["User-Agent"] = commonHeaders["User-Agent"];
+  headers.Referer = identity.referer;
+  headers.Origin = HUANGGUO_SITE;
+  return streamCandidates.map(function (url, index) {
+    return {
+      name: "第 " + identity.episode + " 集" + (index ? " · 备用" + index : ""),
+      description: "HLS 播放资源（播放时实时获取）",
+      url: url,
+      playerType: "app",
+      customHeaders: Object.keys(headers).length ? headers : undefined,
+    };
+  });
 }
 
 if (typeof module !== "undefined" && module && module.exports) {

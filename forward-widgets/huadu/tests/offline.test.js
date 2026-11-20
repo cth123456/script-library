@@ -21,8 +21,8 @@ const loadModule = harness.loadModule;
 const out = console.log.bind(console);
 global.console = { log: function () {}, error: out, warn: out };
 
-const HOST_A = "https://f7.hdys00.com";
-const HOST_B = "https://f7.hdys01.com";
+const HOST_A = "https://mt9vi.hdys00.com";
+const HOST_B = "https://mt9vi.hdys01.com";
 
 /* ------------------------- 夹具 ------------------------- */
 
@@ -34,6 +34,15 @@ const CONFIG_JS = [
   'window.line_4 = "https://evil.example.com";', // 非白名单 -> 必须被拒
   'window.line_5 = "' + HOST_A + '";', // 重复 -> 去重
   'window.line_6 = "https://bb.hdfby.com/index.html";', // 发布页 -> 不作为 API 入口
+  "",
+].join("\n");
+
+const DYNAMIC_CONFIG_JS = [
+  "// 2026-11 新版发布页：动态拼接",
+  'window.line_1 = "https://" + p + ".hdys00.com";',
+  'window.line_2 = "https://" + p + ".hdys1.com";',
+  'window.line_3 = "https://" + p + ".hdys.top";',
+  'window.line_4 = "https://" + p + ".hdfby.com";',
   "",
 ].join("\n");
 
@@ -220,9 +229,42 @@ test("config.js 解析：只接受白名单 https，拒绝 http / 外部域，�
   const runtime = createWidget({});
   const api = loadModule(runtime.widget).api;
   const entries = api.huaduParseConfigJs(CONFIG_JS);
-  assert.strictEqual(entries.join(","), [HOST_A, HOST_B, "https://bb.hdfby.com"].join(","));
+  assert.strictEqual(entries.join(","), [HOST_A, HOST_B].join(","));
   assert.ok(entries.indexOf("http://f7.hdys02.com") < 0, "http 候选必须被拒");
   assert.ok(entries.indexOf("https://evil.example.com") < 0, "非白名单域必须被拒");
+  assert.ok(entries.indexOf("https://bb.hdfby.com") < 0, "发布页域名必须被排除");
+});
+
+test("config.js 解析：新版动态拼接 + 北京时间种子前缀（20261117 -> d9ahfx）", function () {
+  const runtime = createWidget({});
+  const api = loadModule(runtime.widget).api;
+  const stamp = Date.UTC(2026, 10, 17, 4, 0, 0);
+  const entries = api.huaduParseConfigJs(DYNAMIC_CONFIG_JS, stamp);
+  assert.strictEqual(
+    entries.join(","),
+    ["https://d9ahfx.hdys00.com", "https://d9ahfx.hdys1.com"].join(",")
+  );
+  assert.ok(entries.indexOf("https://d9ahfx.hdys.top") < 0, "hdys.top 发布页必须被排除");
+  assert.ok(entries.indexOf("https://d9ahfx.hdfby.com") < 0, "hdfby 发布页必须被排除");
+});
+
+test("URL 安全：新版 33 条 API 域名族全部放行，发布页与 hdys.top 拒绝", function () {
+  const runtime = createWidget({});
+  const api = loadModule(runtime.widget).api;
+  const suffixes = [
+    ".hdys00.com", ".hdys01.com", ".hdys02.com", ".hdys0.com", ".hdys1.com", ".hdys2.com",
+    ".hdzy.org", ".hdzy.net", ".hdzy.me", ".huaduyy.com", ".huaduyy.net", ".huaduyy.org",
+    ".huaduys.org", ".huaduys.me", ".huaduys.cc", ".huaduys.com", ".huaduys.net", ".huaduys.vip",
+    ".huaduzy.org", ".huaduzy.me", ".huaduzy.cc", ".huaduzy.com", ".huaduzy.net", ".huaduzy.vip",
+    ".huadutx.com", ".huadutx.net", ".huadutx.org", ".huadudm.com", ".huadudm.net", ".huadudm.org",
+    ".huaduziyuan.com", ".huaduziyuan.net", ".huaduziyuan.org",
+  ];
+  assert.strictEqual(suffixes.length, 33);
+  for (const suffix of suffixes) {
+    const url = "https://d9ahfx" + suffix;
+    assert.strictEqual(api.huaduAssertSafeUrl(url), url);
+  }
+  assert.throws(() => api.huaduAssertSafeUrl("https://d9ahfx.hdys.top"), /域名族/);
 });
 
 test("列表：JSON 映射为 VideoItem 字段", async function () {
@@ -249,6 +291,26 @@ test("列表：JSON 映射为 VideoItem 字段", async function () {
   assert.strictEqual(first.genreTitle, "中字无码");
   assert.strictEqual(first.mediaType, "movie");
   assert.strictEqual(first.releaseDate, "2026-09-18");
+});
+
+test("列表封面：// 与 / 相对路径按当前线路补全 https，http 升级为 https", async function () {
+  const payload = JSON.parse(listJson(1, [27916, 27905, 27900]));
+  payload.list[0].vod_pic = "//pic.example.com/a.jpg";
+  payload.list[1].vod_pic = "/upload/vod/b.jpg";
+  payload.list[2].vod_pic = "http://pic.example.com/c.jpg";
+  const runtime = createWidget({
+    routes: {
+      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+      "/index.php/ajax/data": { statusCode: 200, data: JSON.stringify(payload) },
+    },
+  });
+  const api = loadModule(runtime.widget).api;
+  const items = await api.loadLatest({ page: 1 });
+  assert.strictEqual(items[0].coverUrl, "https://pic.example.com/a.jpg");
+  assert.strictEqual(items[1].coverUrl, "https://mt9vi.hdys00.com/upload/vod/b.jpg");
+  assert.strictEqual(items[1].posterPath, items[1].coverUrl);
+  assert.strictEqual(items[1].backdropPath, items[1].coverUrl);
+  assert.strictEqual(items[2].coverUrl, "https://pic.example.com/c.jpg");
 });
 
 test("列表：分页按站点上限裁剪，limit 使用白名单值", async function () {
@@ -504,6 +566,28 @@ test("详情：占位页返回 null（不是空数组、不抛异常）", async 
   assert.strictEqual(item, null);
 });
 
+test("详情：不同条目独立解析，不串页", async function () {
+  const second = DETAIL_HTML
+    .replace("MKMP-716 详情标题-女演员", "SORA-643 另一条目标题")
+    .replace("https://pic.3010.top/upload/vod/20260821-1/aaa.jpg", "https://pic.3010.top/upload/vod/20260821-1/bbb.jpg")
+    .replace("27916-1-1", "27905-1-1");
+  const runtime = createWidget({
+    routes: {
+      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+      "/index.php/voddetail/27916.html": { statusCode: 200, data: DETAIL_HTML },
+      "/index.php/voddetail/27905.html": { statusCode: 200, data: second },
+    },
+  });
+  const api = loadModule(runtime.widget).api;
+  const first = await api.loadDetail("huadu://vod/27916");
+  const other = await api.loadDetail("huadu://vod/27905");
+  assert.strictEqual(first.id, "huadu://vod/27916");
+  assert.strictEqual(other.id, "huadu://vod/27905");
+  assert.notStrictEqual(first.title, other.title);
+  assert.notStrictEqual(first.coverUrl, other.coverUrl);
+  assert.strictEqual(other.playPath, "27905-1-1");
+});
+
 test("播放：player_data.url 两步解码为 m3u8", async function () {
   const runtime = createWidget({
     routes: {
@@ -652,7 +736,7 @@ test("发布页不可用：回退内置候选域", async function () {
   const items = await api.loadLatest({ page: 1 });
   assert.strictEqual(items.length, 1);
   const dataCall = runtime.state.calls.filter((c) => c.url.indexOf("/index.php/ajax/data") >= 0)[0];
-  assert.ok(dataCall.url.indexOf("://f7.hdys") > 0, "应使用内置候选域：" + dataCall.url);
+  assert.match(dataCall.url, /:\/\/[a-z0-9]{3,6}\.hdys/, "应使用当日内置候选域：" + dataCall.url);
 });
 
 test("存储不可用：模块仍可工作（内存态）", async function () {

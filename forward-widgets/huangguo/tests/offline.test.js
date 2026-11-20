@@ -103,10 +103,14 @@ test("播放时按剧集调用站点播放 API 并带 CDN 请求头", async func
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=2", episodeNumber: 2 });
   assert.strictEqual(resources.length, 1);
   assert.strictEqual(resources[0].url, "https://cdn.example/stream.m3u8?sig=temporary");
-  assert.deepStrictEqual({ ...resources[0].customHeaders }, { "x-cdn-auth": "temporary-auth", "x-cdn-app": "150" });
+  assert.strictEqual(resources[0].customHeaders["x-cdn-auth"], "temporary-auth");
+  assert.strictEqual(resources[0].customHeaders["x-cdn-app"], "150");
+  assert.match(resources[0].customHeaders.Referer, /huangguoai\.com\/video\/123\//);
   assert.match(calls.posts[0].url, /\/api\/videos\/123\/episodes\/2\/playback$/);
   assert.strictEqual(calls.posts[0].body, "{}");
-  assert.strictEqual(calls.posts[0].requestOptions.timeout, 20000);
+  assert.strictEqual(calls.posts[0].requestOptions.timeout, 10000);
+  assert.match(calls.posts[0].requestOptions.headers.Referer, /huangguoai\.com/);
+  assert.match(calls.posts[0].requestOptions.headers.Origin, /huangguoai\.com/);
 });
 
 test("分片不要求认证头时不向资源或第三方分片域发送 CDN 认证", async function () {
@@ -127,7 +131,9 @@ test("分片不要求认证头时不向资源或第三方分片域发送 CDN 认
   });
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
   assert.strictEqual(resources.length, 1);
-  assert.strictEqual(resources[0].customHeaders, undefined);
+  assert.strictEqual(resources[0].customHeaders["x-cdn-auth"], undefined);
+  assert.strictEqual(resources[0].customHeaders["x-cdn-app"], undefined);
+  assert.strictEqual(resources[0].playerType, "app");
 });
 
 test("播放 API 返回其他剧集时拒绝错误地址", async function () {
@@ -147,4 +153,51 @@ test("播放 API 返回其他剧集时拒绝错误地址", async function () {
   });
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=2", episodeNumber: 2 });
   assert.strictEqual(resources.length, 0);
+});
+
+test("播放 API 缺少 main 时回退到 hevc / preview 备选字段", async function () {
+  const { api } = loadModule({
+    post: async () => ({
+      statusCode: 200,
+      data: {
+        status: 1,
+        data: {
+          id: "123",
+          ep: 1,
+          manifest_method: "GET",
+          streams: { hevc: "https://cdn.example/hevc.m3u8", preview: "https://cdn.example/preview.m3u8" },
+        },
+      },
+    }),
+  });
+  const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
+  assert.strictEqual(resources.length, 2);
+  assert.strictEqual(resources[0].url, "https://cdn.example/hevc.m3u8");
+  assert.strictEqual(resources[1].url, "https://cdn.example/preview.m3u8");
+});
+
+test("播放接口瞬时失败时自动重试一次", async function () {
+  let attempts = 0;
+  const { api } = loadModule({
+    post: async () => {
+      attempts++;
+      if (attempts === 1) throw new Error("network reset");
+      return {
+        statusCode: 200,
+        data: {
+          status: 1,
+          data: {
+            id: "123",
+            ep: 1,
+            manifest_method: "GET",
+            streams: { main: "https://cdn.example/retry.m3u8" },
+          },
+        },
+      };
+    },
+  });
+  const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
+  assert.strictEqual(attempts, 2);
+  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources[0].url, "https://cdn.example/retry.m3u8");
 });

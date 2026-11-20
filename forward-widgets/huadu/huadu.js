@@ -1,6 +1,6 @@
 /*
  * 花都影视（发布页：https://ab.hdfby.com/index.html）Forward / REX 模块
- * 版本：1.0.4（2026-11-15）
+ * 版本：1.0.9（2026-11-21）
  *
  * 数据来源（2026-09-19 实测验证）：
  *   - 列表/分类：GET {line}/index.php/ajax/data?mid=1&tid={1..16}&limit={10|20|30}&page={1..20}
@@ -13,13 +13,14 @@
  *   - 详情：GET {line}/index.php/voddetail/{id}.html（SSR，纯文本正则解析，不执行远端脚本）
  *   - 播放：GET {line}/index.php/vodplay/{id}-1-1.html → player_data.url
  *     = base64( percentEncode( m3u8 ) )，两步解码得到最终播放地址。
- *   - 入口：发布页 {publish}/js/config.js（645 B 纯文本，window.line_N = "https://…"）
- *     只做字符串解析，不使用 eval / Function。
+ *   - 入口：发布页 {publish}/js/config.js（约 4930 B 纯文本，
+ *     window.line_N = "https://" + p + ".domain"）
+ *     只做字符串解析，不使用 eval / Function；前缀 p 由北京时间日期种子确定性生成。
  *
  * 网络与安全边界：
  *   - 所有请求目标都先经过 huaduAssertSafeUrl：仅 https、白名单域名族、拒绝凭据 /
- *     IP 字面量 / localhost / 内网与保留名；候选域只能来自发布页发现、缓存或内置清单，
- *     不猜测前缀、不无限枚举。
+ *     IP 字面量 / localhost / 内网与保留名；候选域只能来自发布页发现、缓存、内置清单
+ *     或发布页域名模板 + 当日种子前缀，不无限枚举。
  *   - 宿主对 timeout / 取消 / 计时器的支持未经证实，本模块不依赖计时器做退避，
  *     改用「同域立即重试 1 次 + 跨域最多 3 个候选 + 失败域冷却」控制最坏耗时。
  *   - 多个线路域共享同一后端（同分页 id 序列一致、同 id 出同一 m3u8），换域是边缘冗余。
@@ -31,14 +32,14 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.8",
+  version: "1.0.9",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
   author: "Codex",
   site: "https://ab.hdfby.com",
-  // 图标放在与接口同源、实测可用的线路域上（发布页曾有 403 挑战，不适合当图标源）
-  icon: "https://f7.hdys00.com/hdys/img/favicon.ico",
+  // 发布页 favicon 实测 200，可避免依赖按日变化的前缀线路域
+  icon: "https://ab.hdfby.com/favicon.ico",
   detailCacheDuration: 0,
   modules: [
     {
@@ -118,33 +119,44 @@ var HUADU_PUBLISH_SITES = [
 ];
 
 // 内置兜底候选（2026-09-19 从发布页 js/config.js 实测采集；仅当发现与缓存都失败时使用）
-var HUADU_BUILTIN_ENTRIES = [
-  "https://f7.hdys00.com",
-  "https://f7.hdys01.com",
-  "https://f7.hdys02.com",
-  "https://f7.huadudm.com",
-  "https://f7.huadudm.net",
-  "https://f7.huadudm.org",
-  "https://f7.huaduys.com",
-  "https://f7.huaduys.net",
-  "https://f7.huaduys.vip",
-];
-
-// 允许的域名族（发布页自身 + 实测线路域）。收紧白名单优先于「发现什么用什么」。
-var HUADU_ALLOWED_SUFFIXES = [
-  ".hdfby.com",
-  ".hdfby.net",
-  ".hdfby.org",
+var HUADU_API_SUFFIXES = [
   ".hdys00.com",
   ".hdys01.com",
   ".hdys02.com",
-  ".huadudm.com",
-  ".huadudm.net",
-  ".huadudm.org",
+  ".hdys0.com",
+  ".hdys1.com",
+  ".hdys2.com",
+  ".hdzy.org",
+  ".hdzy.net",
+  ".hdzy.me",
+  ".huaduyy.com",
+  ".huaduyy.net",
+  ".huaduyy.org",
+  ".huaduys.org",
+  ".huaduys.me",
+  ".huaduys.cc",
   ".huaduys.com",
   ".huaduys.net",
   ".huaduys.vip",
+  ".huaduzy.org",
+  ".huaduzy.me",
+  ".huaduzy.cc",
+  ".huaduzy.com",
+  ".huaduzy.net",
+  ".huaduzy.vip",
+  ".huadutx.com",
+  ".huadutx.net",
+  ".huadutx.org",
+  ".huadudm.com",
+  ".huadudm.net",
+  ".huadudm.org",
+  ".huaduziyuan.com",
+  ".huaduziyuan.net",
+  ".huaduziyuan.org",
 ];
+
+// 允许的域名族（发布页自身 + 新版发布页列出的全部 API 域名族）。
+var HUADU_ALLOWED_SUFFIXES = [".hdfby.com", ".hdfby.net", ".hdfby.org"].concat(HUADU_API_SUFFIXES);
 
 var HUADU_API_MID = 1;
 var HUADU_LIST_LIMIT = 20; // 站点白名单只认 10 / 20 / 30
@@ -156,6 +168,8 @@ var HUADU_ENTRY_TTL_MS = 6 * 60 * 60 * 1000; // 候选清单刷新周期
 var HUADU_TEXT_CACHE_MS = 4 * 60 * 1000; // 会话内页面缓存
 var HUADU_SUGGEST_LIMIT = 30;
 var HUADU_SUGGEST_VERIFY_LIMIT = 5; // 降级搜索结果抽样存活校验条数
+var HUADU_DAILY_PREFIX_MIN_LENGTH = 3;
+var HUADU_DAILY_PREFIX_MAX_LENGTH = 6;
 
 var HUADU_STORAGE_ENTRIES = "huadu.entries.v1";
 var HUADU_STORAGE_STATE = "huadu.state.v1";
@@ -199,6 +213,40 @@ var HUADU_ATTR_PATTERNS = {
 
 function huaduNow() {
   return Date.now();
+}
+
+function huaduBeijingDateKey(timestamp) {
+  var date = new Date((timestamp || huaduNow()) + 8 * 60 * 60 * 1000);
+  return (
+    String(date.getUTCFullYear()) +
+    ("0" + (date.getUTCMonth() + 1)).slice(-2) +
+    ("0" + date.getUTCDate()).slice(-2)
+  );
+}
+
+function huaduDailySeed(timestamp) {
+  var key = huaduBeijingDateKey(timestamp);
+  return { key: key, value: parseInt(key, 10) };
+}
+
+function huaduMulberry32(seed) {
+  var state = seed >>> 0;
+  return function () {
+    state = (state + 0x6d2b79f5) >>> 0;
+    var value = Math.imul(state ^ (state >>> 15), state | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function huaduDailyPrefix(timestamp) {
+  var seed = huaduDailySeed(timestamp);
+  var random = huaduMulberry32(seed.value);
+  var length = HUADU_DAILY_PREFIX_MIN_LENGTH + Math.floor(random() * (HUADU_DAILY_PREFIX_MAX_LENGTH - HUADU_DAILY_PREFIX_MIN_LENGTH + 1));
+  var alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  var prefix = "";
+  for (var i = 0; i < length; i++) prefix += alphabet.charAt(Math.floor(random() * alphabet.length));
+  return { prefix: prefix, dateKey: seed.key };
 }
 
 function huaduToInt(value, fallback) {
@@ -398,6 +446,7 @@ function huaduDecodePlayerUrl(value) {
 
 var HUADU_MEM_STORAGE = {};
 var HUADU_MEM_TEXT_CACHE = {};
+var HUADU_LAST_ENTRY = "";
 
 async function huaduStorageGet(key) {
   try {
@@ -492,13 +541,38 @@ async function huaduMarkHostFailure(state, entry) {
 
 /* ============================ 入口发现 ============================ */
 
-// 只做字符串解析：window.line_N = "https://…"
-function huaduParseConfigJs(text) {
+// 只做字符串解析：兼容 window.line_N = "https://domain" 与
+// window.line_N = "https://" + p + ".domain"；不执行远端脚本。
+function huaduParseConfigJs(text, timestamp) {
   var source = String(text || "");
   var results = [];
+  var templates = [];
   var seen = {};
   var marker = "line_";
   var searchFrom = 0;
+
+  function addUrl(raw) {
+    var value = String(raw || "").trim();
+    if (!value) return false;
+    if (value === "https://" || value === "https:" || value === "/") return false; // 动态拼接的协议片段
+    if (huaduIsPublishHost(huaduHostOf(value))) {
+      console.log("[huadu] 忽略发布页域名：" + value);
+      return false;
+    }
+    var url = "";
+    try {
+      url = huaduAssertSafeUrl(value);
+    } catch (error) {
+      console.log("[huadu] 忽略发布页中的候选：" + value + "（" + error.message + "）");
+      return false;
+    }
+    var host = huaduHostOf(url);
+    if (!host || seen[host]) return false;
+    seen[host] = true;
+    results.push(url.replace(/\/index\.html$/i, ""));
+    return true;
+  }
+
   while (true) {
     var at = source.indexOf(marker, searchFrom);
     if (at < 0) break;
@@ -516,27 +590,49 @@ function huaduParseConfigJs(text) {
     if (end < 0) continue;
     var raw = huaduDecodeHtml(rest.slice(1, end)).trim();
     if (!raw) continue;
-    var url = "";
-    try {
-      url = huaduAssertSafeUrl(raw);
-    } catch (error) {
-      console.log("[huadu] 忽略发布页中的候选：" + raw + "（" + error.message + "）");
-      continue;
+
+    if (addUrl(raw)) continue;
+
+    // 新版格式："https://" + p + ".domain"，只接受这一固定拼接顺序。
+    var expression = rest.slice(end + 1, rest.indexOf(";", end + 1) >= 0 ? rest.indexOf(";", end + 1) : rest.length);
+    var dynamic = expression.match(/^\s*\+\s*p\s*\+\s*(["'])([^"']+)\1/);
+    if (dynamic) {
+      var suffix = huaduDecodeHtml(dynamic[2]).trim();
+      if (/^\.[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(suffix) && !huaduIsPublishHost("x" + suffix)) {
+        templates.push(suffix.toLowerCase());
+      }
     }
-    var host = huaduHostOf(url);
-    if (!host || seen[host]) continue;
-    seen[host] = true;
-    results.push(url.replace(/\/index\.html$/i, ""));
+  }
+
+  if (templates.length) {
+    var daily = huaduDailyPrefix(timestamp);
+    console.log("[huadu] 发布页动态域名模板 " + templates.length + " 条，日期种子 " + daily.dateKey + "，前缀 " + daily.prefix);
+    for (var i = 0; i < templates.length; i++) addUrl("https://" + daily.prefix + templates[i]);
   }
   return results;
+}
+
+function huaduBuiltinEntries(timestamp) {
+  var prefix = huaduDailyPrefix(timestamp).prefix;
+  var entries = [];
+  for (var i = 0; i < HUADU_API_SUFFIXES.length; i++) {
+    entries.push("https://" + prefix + HUADU_API_SUFFIXES[i]);
+  }
+  return entries;
 }
 
 function huaduIsApiEntry(url) {
   var host = huaduHostOf(url);
   if (!host) return false;
-  // 发布页（ab./bb.）实测只做静态页，不提供 CMS 接口
-  if (host.indexOf("bb.hdfby") === 0 || host.indexOf("ab.hdfby") === 0) return false;
+  // 发布页（.hdfby.* / .hdys.top）只做静态页，不提供 CMS 接口
+  if (huaduIsPublishHost(host)) return false;
   return true;
+}
+
+function huaduIsPublishHost(host) {
+  var lower = String(host || "").toLowerCase();
+  if (!lower) return false;
+  return /(?:^|\.)hdfby\.[a-z0-9-]+$/i.test(lower) || /(?:^|\.)hdys\.top$/i.test(lower);
 }
 
 async function huaduDiscoverEntries(state) {
@@ -553,7 +649,7 @@ async function huaduDiscoverEntries(state) {
     var site = HUADU_PUBLISH_SITES[i];
     try {
       var text = await huaduHttpGet(site + "/js/config.js");
-      var urls = huaduParseConfigJs(text);
+      var urls = huaduParseConfigJs(text, now);
       for (var j = 0; j < urls.length; j++) {
         if (huaduIsApiEntry(urls[j]) && !seen[urls[j]]) {
           seen[urls[j]] = true;
@@ -583,8 +679,8 @@ async function huaduDiscoverEntries(state) {
     return { urls: cached.urls, source: "stale-cache", fetchedAt: cached.fetchedAt || 0 };
   }
 
-  console.log("[huadu] 发布页与缓存都不可用，使用内置候选域");
-  return { urls: HUADU_BUILTIN_ENTRIES.slice(0), source: "builtin", fetchedAt: 0 };
+  console.log("[huadu] 发布页与缓存都不可用，使用当日种子内置候选域");
+  return { urls: huaduBuiltinEntries(now), source: "builtin", fetchedAt: 0 };
 }
 
 // 候选顺序：lastGood 优先，冷却中的域排到最后
@@ -742,6 +838,7 @@ async function huaduFetchRaw(path, options) {
       for (var attempt = 0; attempt < HUADU_ATTEMPTS_PER_HOST; attempt++) {
         try {
           var data = await huaduHttpGet(entry + key, opts);
+          HUADU_LAST_ENTRY = entry;
           await huaduMarkHostSuccess(state, entry);
           if (!fresh) {
             HUADU_MEM_TEXT_CACHE[key] = { data: data, expires: now + HUADU_TEXT_CACHE_MS };
@@ -817,6 +914,21 @@ function huaduDetailLink(id) {
   return "huadu://vod/" + huaduExtractId(id);
 }
 
+function huaduNormalizePicture(value, baseUrl) {
+  var picture = String(value || "").trim().replace(/&amp;/g, "&");
+  if (!picture || /^(?:data|blob|javascript):/i.test(picture)) return "";
+  if (/(?:\/no\.jpg|\/load\.gif)$/i.test(picture)) return "";
+  if (/^https:\/\//i.test(picture)) return picture;
+  if (/^http:\/\//i.test(picture)) return "https://" + picture.slice(7);
+  if (picture.indexOf("//") === 0) return "https:" + picture;
+  var base = String(baseUrl || "");
+  if (/^https:\/\//i.test(base)) {
+    var match = base.match(/^(https:\/\/[^/?#]+)/i);
+    if (match) return match[1] + (picture.charAt(0) === "/" ? picture : "/" + picture);
+  }
+  return "";
+}
+
 function huaduVideoItem(vod) {
   if (!vod || !vod.vod_id) return null;
   var id = String(vod.vod_id);
@@ -824,8 +936,7 @@ function huaduVideoItem(vod) {
   var sub = huaduCleanText(vod.vod_sub);
   var tag = huaduCleanText(vod.vod_tag);
   var actor = huaduCleanText(vod.vod_actor);
-  var picture = String(vod.vod_pic || "").trim();
-  if (picture && /\/no\.jpg$/i.test(picture)) picture = "";
+  var picture = huaduNormalizePicture(vod.vod_pic, HUADU_LAST_ENTRY || vod.detail_link || vod.vod_play_url || "");
 
   var typeId = vod.type_id ? String(vod.type_id) : "";
   var typeName = "";
@@ -913,8 +1024,10 @@ function huaduParseCards(html) {
     seen[id] = true;
 
     var block = source.slice(anchorStart, anchorStart + 1200);
-    var image = huaduAttribute(block, "data-original") || huaduAttribute(block, "src");
-    if (image && /\/no\.jpg$/i.test(image)) image = "";
+    var image = huaduNormalizePicture(
+      huaduAttribute(block, "data-original") || huaduAttribute(block, "data-src") || huaduAttribute(block, "src"),
+      HUADU_LAST_ENTRY || huaduAttribute(tag, "href")
+    );
 
     var remarks = huaduCleanText(
       huaduFirstMatch(block, /<span\b[^>]*class=["'][^"']*pic-text[^"']*["'][^>]*>([\s\S]*?)<\/span>/i)
@@ -959,7 +1072,8 @@ function huaduParseDetail(html, id) {
     var detailImage = detailImageMatch ? detailImageMatch[0] : "";
     poster = huaduAttribute(detailImage, "data-original") || huaduAttribute(detailImage, "data-src") || huaduAttribute(detailImage, "src");
   }
-  if (poster && /(?:\/no\.jpg|\/load\.gif)$/i.test(poster)) poster = "";
+  var detailBase = source.match(/(https:\/\/[^"'\s<>]+)/);
+  poster = huaduNormalizePicture(poster, HUADU_LAST_ENTRY || (detailBase ? detailBase[1] : ""));
 
   // 详情页 meta 行固定为「<strong>标签：</strong>值</p>」，用固定正则逐项取
   var category = huaduCleanText(
@@ -1149,8 +1263,7 @@ async function search(params) {
   for (var i = 0; i < list.length; i++) {
     var entry = list[i];
     if (!entry || !entry.id) continue;
-    var picture = String(entry.pic || "").trim();
-    if (picture && /\/no\.jpg$/i.test(picture)) picture = "";
+    var picture = huaduNormalizePicture(entry.pic, HUADU_LAST_ENTRY || payload.url || "");
     var link = huaduDetailLink(entry.id);
     candidates.push({
       id: link,
