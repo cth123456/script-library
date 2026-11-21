@@ -260,7 +260,7 @@ test("列表封面：配置 coverWorker 时直接走 Worker，不本地解密", 
   const items = await api.loadAiDuanju({ page: 1, coverWorker: "https://worker.example/decrypt" });
   assert.strictEqual(
     items[0].coverUrl,
-    "https://worker.example/decrypt?url=" + encodeURIComponent("https://huangguoai.com/cover/123.jpeg"),
+    "https://worker.example/decrypt?u=" + encodeURIComponent("https://huangguoai.com/cover/123.jpeg"),
   );
   assert.strictEqual(calls.gets.filter((c) => c.url.indexOf("worker.example") >= 0).length, 0);
 });

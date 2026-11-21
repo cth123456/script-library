@@ -3,7 +3,7 @@ WidgetMetadata = {
   title: "黄果短剧",
   description: "黄果短剧列表、分类、搜索、详情及按集实时取播放地址。",
   author: "Codex",
-  version: "0.1.3",
+  version: "0.1.4",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   site: "https://huangguoai.com",
@@ -14,7 +14,7 @@ WidgetMetadata = {
       title: "封面解密 Worker",
       type: "input",
       value: "",
-      description: "留空时复用此模块存储的 Worker 地址；新安装可填入你自己的封面解密 Worker。",
+      description: "留空则使用站点官方 WebP 备用地址；如有自己的 AES 图片解密 Worker，可填 Worker 地址（?u= 或 ?url= 形式）。",
     },
   ],
   modules: [
@@ -212,7 +212,8 @@ async function hgWorkerUrl(params) {
 function hgCoverUrl(source, worker) {
   if (!source || !worker) return source || "";
   if (source.indexOf(worker) === 0) return source;
-  return worker + (worker.indexOf("?") >= 0 ? "&" : "?") + "url=" + encodeURIComponent(source);
+  if (/[?&](?:u|url)=/i.test(worker)) return worker + encodeURIComponent(source);
+  return worker + (worker.indexOf("?") >= 0 ? "&" : "?") + "u=" + encodeURIComponent(source);
 }
 
 /* ---------------- 封面解密（站点图床 AES-128-CBC / NoPadding） ----------------
@@ -223,7 +224,7 @@ function hgCoverUrl(source, worker) {
 var HUANGGUO_COVER_KEY = "f5d965df75336270";
 var HUANGGUO_COVER_IV = "97b60394abc2fbe1";
 var HUANGGUO_WEBP_BASE = "https://new2.qnlycc.cn";
-var HUANGGUO_COVER_CONCURRENCY = 8;
+var HUANGGUO_COVER_CONCURRENCY = 4;
 var HUANGGUO_COVER_CACHE = {};
 
 var HG_B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -441,10 +442,11 @@ function hgCoverCandidates(source) {
   var list = [];
   var text = String(source || "");
   if (/^https:\/\//i.test(text)) list.push(text);
-  var match = text.match(/^(https:\/\/[^/?#]+)(\/[^?#]*)/i);
-  if (match && /\.(?:jpe?g|png|bmp)$/i.test(match[2])) {
-    var webp = HUANGGUO_WEBP_BASE + match[2] + ".webp";
-    if (list.indexOf(webp) < 0) list.push(webp);
+  // 站点官方 WebP 备用域无需签名且带长期缓存；当 original 是加密图床时优先用这个镜像路径。
+  var match = text.match(/^https:\/\/(?:pic\.qnlycc\.cn|new\.qnlycc\.cn|image\.qnlycc\.cn|pic\.aluxvl\.cn)(\/[^?#]*)/i);
+  if (match && /\.(?:jpe?g|png|bmp)$/i.test(match[1])) {
+    var webp = HUANGGUO_WEBP_BASE + match[1] + ".webp";
+    if (list.indexOf(webp) < 0) list.unshift(webp);
   }
   return list;
 }
