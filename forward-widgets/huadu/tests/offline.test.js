@@ -588,6 +588,40 @@ test("详情：不同条目独立解析，不串页", async function () {
   assert.strictEqual(other.playPath, "27905-1-1");
 });
 
+const NEW_ROUTE_DETAIL_HTML = [
+  "<!DOCTYPE html><html><head><title>《MVSH-007 测试标题-女演员》详情介绍-中字无码-花都影视</title></head><body>",
+  '<div class="stui-vodlist__box"><a class="stui-vodlist__thumb picture img-shadow" href="/index.php/vodplay/30741-1-1.html">',
+  '<img class="lazyload" alt="MVSH-007" src="/hdys/img/load.gif" data-original="https://a.7976.top/upload/vod/20261101-1/cover.jpg"></a></div>',
+  '<p><strong>分类：</strong>中字无码</p>',
+  '<p><strong>日期：</strong>2026-11-01</p>',
+  '<p><strong>时长：</strong>03:03:21</p>',
+  '<p><strong>演员：</strong>演员甲</p>',
+  "<h3>猜你喜欢</h3><ul class=\"stui-vodlist clearfix\">",
+  '<li><a class="stui-vodlist__thumb picture w-thumb" href="/voddetail30739.html" title="相关条目一"><img data-original="https://a.7976.top/upload/vod/r1.jpg"></a></li>',
+  '<li><a class="stui-vodlist__thumb picture w-thumb" href="/index.php/voddetail30738.html" title="相关条目二"><img data-original="https://a.7976.top/upload/vod/r2.jpg"></a></li>',
+  "</ul></body></html>",
+].join("");
+
+test("详情：新版 /index.php/voddetail{id}.html 路由 + 首个 data-original 封面", async function () {
+  const runtime = createWidget({
+    routes: {
+      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+      "/index.php/voddetail30741.html": { statusCode: 200, data: NEW_ROUTE_DETAIL_HTML },
+    },
+  });
+  const api = loadModule(runtime.widget).api;
+  const item = await api.loadDetail("huadu://vod/30741");
+  assert.strictEqual(item.id, "huadu://vod/30741");
+  assert.strictEqual(item.title, "MVSH-007 测试标题-女演员");
+  assert.strictEqual(item.coverUrl, "https://a.7976.top/upload/vod/20261101-1/cover.jpg");
+  assert.strictEqual(item.playPath, "30741-1-1");
+  assert.strictEqual(item.relatedItems.length, 2);
+  assert.strictEqual(item.relatedItems[0].id, "huadu://vod/30739");
+  assert.strictEqual(item.relatedItems[1].id, "huadu://vod/30738");
+  const detailCall = runtime.state.calls.filter((c) => c.url.indexOf("voddetail30741") >= 0);
+  assert.strictEqual(detailCall.length, 1, "应优先请求新详情路由");
+});
+
 test("播放：player_data.url 两步解码为 m3u8", async function () {
   const runtime = createWidget({
     routes: {
@@ -786,6 +820,9 @@ test("id 解析：link / 详情 URL / 播放 URL / 纯数字", function () {
   assert.strictEqual(api.huaduExtractId("huadu:27916"), "27916");
   assert.strictEqual(api.huaduExtractId("huadu://vod/27916"), "27916");
   assert.strictEqual(api.huaduExtractId("https://f7.hdys00.com/index.php/voddetail/27916.html"), "27916");
+  assert.strictEqual(api.huaduExtractId("https://mt9vi.hdys00.com/index.php/voddetail30741.html"), "30741");
+  assert.strictEqual(api.huaduExtractId("/voddetail30739.html"), "30739");
+  assert.strictEqual(api.huaduExtractId("/index.php/vodplay30741-1-1.html"), "30741");
   assert.strictEqual(api.huaduExtractId("/vodplay/27916-1-1.html"), "27916");
   assert.strictEqual(api.huaduExtractId("27916"), "27916");
   assert.strictEqual(api.huaduExtractId(""), "");

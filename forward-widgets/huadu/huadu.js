@@ -1,6 +1,6 @@
 /*
  * 花都影视（发布页：https://ab.hdfby.com/index.html）Forward / REX 模块
- * 版本：1.0.9（2026-11-21）
+ * 版本：1.0.10（2026-11-21）
  *
  * 数据来源（2026-09-19 实测验证）：
  *   - 列表/分类：GET {line}/index.php/ajax/data?mid=1&tid={1..16}&limit={10|20|30}&page={1..20}
@@ -32,7 +32,7 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.9",
+  version: "1.0.10",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
@@ -994,7 +994,9 @@ function huaduExtractId(value) {
     var digits = text.match(/(\d{1,12})$/);
     return digits ? digits[1] : "";
   }
-  var fromRoute = text.match(/(?:voddetail|vodplay)\/(\d+)/);
+  // 站点详情路由已从 /index.php/voddetail/{id}.html 改为 /index.php/voddetail{id}.html，
+  // 播放仍是 /index.php/vodplay/{id}-{sid}-{nid}.html，这里两种写法都要认。
+  var fromRoute = text.match(/(?:voddetail|vodplay)\/?(\d{1,12})/);
   if (fromRoute) return fromRoute[1];
   var bare = text.match(/^(\d{1,12})$/);
   if (bare) return bare[1];
@@ -1072,6 +1074,11 @@ function huaduParseDetail(html, id) {
     var detailImage = detailImageMatch ? detailImageMatch[0] : "";
     poster = huaduAttribute(detailImage, "data-original") || huaduAttribute(detailImage, "data-src") || huaduAttribute(detailImage, "src");
   }
+  if (!poster) {
+    // 新版详情页把封面放在首个 <img data-original>（stui-vodlist__box 内），没有 og:image。
+    var firstLazy = source.match(/<img\b[^>]*data-original=["']([^"']+)["']/i);
+    if (firstLazy) poster = huaduDecodeHtml(firstLazy[1]).trim();
+  }
   var detailBase = source.match(/(https:\/\/[^"'\s<>]+)/);
   poster = huaduNormalizePicture(poster, HUADU_LAST_ENTRY || (detailBase ? detailBase[1] : ""));
 
@@ -1113,7 +1120,7 @@ function huaduParseDetail(html, id) {
   if (tags.length) description.push(tags.join(" / "));
   if (actor) description.push("演员：" + actor);
 
-  var playPath = huaduFirstMatch(source, /\/?(?:index\.php\/)?vodplay\/(\d+-\d+-\d+)\.html/i, 1);
+  var playPath = huaduFirstMatch(source, /\/?(?:index\.php\/)?vodplay\/?(\d+-\d+-\d+)\.html/i, 1);
   var related = huaduParseCards(source).filter(function (card) {
     return huaduExtractId(card.id) !== String(id);
   });
@@ -1181,7 +1188,28 @@ function huaduListPath(typeId, page) {
 }
 
 function huaduDetailPath(id) {
+  return "/index.php/voddetail" + huaduExtractId(id) + ".html";
+}
+
+// 旧详情路由；仅在新路由不可用时兜底（旧路由当前会返回固定推荐页，不能优先使用）。
+function huaduLegacyDetailPath(id) {
   return "/index.php/voddetail/" + huaduExtractId(id) + ".html";
+}
+
+// 详情 HTML：优先新路由，失败或占位时回退旧路由；两边都拿不到返回 null。
+async function huaduFetchDetailHtml(id) {
+  try {
+    var html = await huaduFetchText(huaduDetailPath(id));
+    if (!huaduIsPlaceholderPage(html)) return html;
+  } catch (error) {
+    console.log("[huadu] 新详情路由失败：" + id + "（" + error.message + "）");
+  }
+  try {
+    return await huaduFetchText(huaduLegacyDetailPath(id), { fresh: true });
+  } catch (error) {
+    if (error && error.huaduKind === "not-found") return null;
+    throw error;
+  }
 }
 
 function huaduPlayPath(id, sid, nid) {
@@ -1283,7 +1311,7 @@ async function search(params) {
   for (var j = 0; j < candidates.length && checked < HUADU_SUGGEST_VERIFY_LIMIT; j++) {
     checked++;
     try {
-      var detailHtml = await huaduFetchText(huaduDetailPath(candidates[j].id));
+      var detailHtml = await huaduFetchDetailHtml(candidates[j].id);
       if (huaduIsPlaceholderPage(detailHtml)) {
         dead++;
         console.log("[huadu] 忽略已下架条目：" + candidates[j].id);
@@ -1303,13 +1331,7 @@ async function loadDetail(link) {
   var id = huaduExtractId(link);
   if (!id) return null;
 
-  var html = null;
-  try {
-    html = await huaduFetchText(huaduDetailPath(id));
-  } catch (error) {
-    if (error && error.huaduKind === "not-found") return null;
-    throw error;
-  }
+  var html = await huaduFetchDetailHtml(id);
   if (huaduIsPlaceholderPage(html)) {
     console.log("[huadu] 详情不存在或已下架：" + id);
     return null;
@@ -1344,9 +1366,9 @@ async function loadResource(params) {
   var player = huaduParsePlayerData(html);
   if (!player || !player.url) {
     // 兜底：从详情页取最新的播放路径（多线路或页面结构变化时）
-    var detailHtml = await huaduFetchText(huaduDetailPath(id), { fresh: true });
+    var detailHtml = await huaduFetchDetailHtml(id);
     if (huaduIsPlaceholderPage(detailHtml)) return [];
-    var playPath = huaduFirstMatch(detailHtml, /\/?(?:index\.php\/)?vodplay\/(\d+-\d+-\d+)\.html/i, 1);
+    var playPath = huaduFirstMatch(detailHtml, /\/?(?:index\.php\/)?vodplay\/?(\d+-\d+-\d+)\.html/i, 1);
     if (playPath) {
       var parts = playPath.split("-");
       html = await huaduFetchText(huaduPlayPath(parts[0], parts[1], parts[2]), { fresh: true });

@@ -3,7 +3,7 @@ WidgetMetadata = {
   title: "黄果短剧",
   description: "黄果短剧列表、分类、搜索、详情及按集实时取播放地址。",
   author: "Codex",
-  version: "0.1.2",
+  version: "0.1.3",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   site: "https://huangguoai.com",
@@ -130,6 +130,7 @@ WidgetMetadata = {
 
 var HUANGGUO_SITE = "https://huangguoai.com";
 var HUANGGUO_STORAGE_WORKER = "hg_cover_worker";
+var HG_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36";
 var HUANGGUO_CATEGORIES = {
   aiDuanju: "/ai-duanju/",
   aiManju: "/ai-manju/",
@@ -212,6 +213,295 @@ function hgCoverUrl(source, worker) {
   if (!source || !worker) return source || "";
   if (source.indexOf(worker) === 0) return source;
   return worker + (worker.indexOf("?") >= 0 ? "&" : "?") + "url=" + encodeURIComponent(source);
+}
+
+/* ---------------- 封面解密（站点图床 AES-128-CBC / NoPadding） ----------------
+ * 站点把封面加密后再下发，前端用 crypto-image-protocol 的公开 key/IV 解密。
+ * REX 客户端不会解密，所以未配置 Worker 时由模块取回密文并本地解密成 data URL。
+ * key/IV 来自站点公开脚本，不含任何登录凭据。
+ */
+var HUANGGUO_COVER_KEY = "f5d965df75336270";
+var HUANGGUO_COVER_IV = "97b60394abc2fbe1";
+var HUANGGUO_WEBP_BASE = "https://new2.qnlycc.cn";
+var HUANGGUO_COVER_CONCURRENCY = 8;
+var HUANGGUO_COVER_CACHE = {};
+
+var HG_B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+function hgBase64ToBytes(text) {
+  var value = String(text || "").replace(/[\r\n\t ]/g, "").replace(/-/g, "+").replace(/_/g, "/");
+  while (value.length % 4) value += "=";
+  var bytes = [];
+  var buffer = 0;
+  var bits = 0;
+  for (var i = 0; i < value.length; i++) {
+    var ch = value.charAt(i);
+    if (ch === "=") break;
+    var index = HG_B64.indexOf(ch);
+    if (index < 0) return null;
+    buffer = (buffer << 6) | index;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((buffer >> bits) & 0xff);
+    }
+  }
+  return Uint8Array.from(bytes);
+}
+
+function hgBytesToBase64(bytes) {
+  var out = "";
+  for (var i = 0; i < bytes.length; i += 3) {
+    var b0 = bytes[i];
+    var b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    var b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+    out += HG_B64.charAt(b0 >> 2);
+    out += HG_B64.charAt(((b0 & 3) << 4) | (b1 >> 4));
+    out += i + 1 < bytes.length ? HG_B64.charAt(((b1 & 15) << 2) | (b2 >> 6)) : "=";
+    out += i + 2 < bytes.length ? HG_B64.charAt(b2 & 63) : "=";
+  }
+  return out;
+}
+
+function hgAsciiBytes(text) {
+  var bytes = new Uint8Array(text.length);
+  for (var i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i) & 0xff;
+  return bytes;
+}
+
+var HG_AES_EXP = new Uint8Array(512);
+var HG_AES_LOG = new Uint8Array(256);
+var HG_AES_SBOX = new Uint8Array(256);
+var HG_AES_ISBOX = new Uint8Array(256);
+var HG_AES_TD = [null, null, null, null];
+var HG_AES_RCON = [0, 1, 2, 4, 8, 16, 32, 64, 128, 27, 54];
+
+(function hgAesInit() {
+  var x = 1;
+  for (var i = 0; i < 255; i++) {
+    HG_AES_EXP[i] = x;
+    HG_AES_LOG[x] = i;
+    // 乘 3（AES 的生成元）：xtime(x) ^ x
+    x = ((((x << 1) ^ (x & 0x80 ? 0x11b : 0)) & 0xff) ^ x);
+  }
+  for (var j = 255; j < 512; j++) HG_AES_EXP[j] = HG_AES_EXP[j - 255];
+  function rotl(v, n) {
+    return ((v << n) | (v >> (8 - n))) & 0xff;
+  }
+  for (var t = 0; t < 256; t++) {
+    var inv = t ? HG_AES_EXP[255 - HG_AES_LOG[t]] : 0;
+    var s = inv ^ rotl(inv, 1) ^ rotl(inv, 2) ^ rotl(inv, 3) ^ rotl(inv, 4) ^ 0x63;
+    HG_AES_SBOX[t] = s;
+    HG_AES_ISBOX[s] = t;
+  }
+  // 逆 T 表：一次查表合并 InvSubBytes + InvMixColumns（按行系数排列）。
+  for (var k = 0; k < 4; k++) HG_AES_TD[k] = new Uint32Array(256);
+  for (var b = 0; b < 256; b++) {
+    var v = HG_AES_ISBOX[b];
+    HG_AES_TD[0][b] = ((hgAesMul(v, 14) << 24) | (hgAesMul(v, 9) << 16) | (hgAesMul(v, 13) << 8) | hgAesMul(v, 11)) >>> 0;
+    HG_AES_TD[1][b] = ((hgAesMul(v, 11) << 24) | (hgAesMul(v, 14) << 16) | (hgAesMul(v, 9) << 8) | hgAesMul(v, 13)) >>> 0;
+    HG_AES_TD[2][b] = ((hgAesMul(v, 13) << 24) | (hgAesMul(v, 11) << 16) | (hgAesMul(v, 14) << 8) | hgAesMul(v, 9)) >>> 0;
+    HG_AES_TD[3][b] = ((hgAesMul(v, 9) << 24) | (hgAesMul(v, 13) << 16) | (hgAesMul(v, 11) << 8) | hgAesMul(v, 14)) >>> 0;
+  }
+})();
+
+function hgAesMul(a, b) {
+  if (!a || !b) return 0;
+  return HG_AES_EXP[HG_AES_LOG[a] + HG_AES_LOG[b]];
+}
+
+function hgAesInvMixWord(word) {
+  var a0 = (word >>> 24) & 0xff;
+  var a1 = (word >>> 16) & 0xff;
+  var a2 = (word >>> 8) & 0xff;
+  var a3 = word & 0xff;
+  return (
+    ((hgAesMul(a0, 14) ^ hgAesMul(a1, 11) ^ hgAesMul(a2, 13) ^ hgAesMul(a3, 9)) << 24) |
+    ((hgAesMul(a0, 9) ^ hgAesMul(a1, 14) ^ hgAesMul(a2, 11) ^ hgAesMul(a3, 13)) << 16) |
+    ((hgAesMul(a0, 13) ^ hgAesMul(a1, 9) ^ hgAesMul(a2, 14) ^ hgAesMul(a3, 11)) << 8) |
+    (hgAesMul(a0, 11) ^ hgAesMul(a1, 13) ^ hgAesMul(a2, 9) ^ hgAesMul(a3, 14))
+  ) >>> 0;
+}
+
+// 密钥扩展：返回加密轮密钥 rk 与等价逆密码所需的 dw = InvMixColumns(rk)。
+function hgAesExpandKey(key) {
+  var w = new Uint8Array(176);
+  w.set(key);
+  var b = 16;
+  for (var r = 1; r <= 10; r++) {
+    var t = [w[b - 4], w[b - 3], w[b - 2], w[b - 1]];
+    t = [
+      HG_AES_SBOX[t[1]] ^ HG_AES_RCON[r],
+      HG_AES_SBOX[t[2]],
+      HG_AES_SBOX[t[3]],
+      HG_AES_SBOX[t[0]],
+    ];
+    for (var i = 0; i < 4; i++) {
+      w[b] = w[b - 16] ^ t[i];
+      b++;
+    }
+    for (var k = 0; k < 12; k++) {
+      w[b] = w[b - 16] ^ w[b - 4];
+      b++;
+    }
+  }
+  var rk = new Uint32Array(44);
+  for (var n = 0; n < 44; n++) {
+    rk[n] = ((w[4 * n] << 24) | (w[4 * n + 1] << 16) | (w[4 * n + 2] << 8) | w[4 * n + 3]) >>> 0;
+  }
+  var dw = new Uint32Array(44);
+  for (var m = 0; m < 44; m++) dw[m] = hgAesInvMixWord(rk[m]);
+  return { rk: rk, dw: dw };
+}
+
+function hgAesDecryptBlockWords(t0, t1, t2, t3, rk, dw) {
+  var a = (t0 ^ rk[40]) >>> 0;
+  var b = (t1 ^ rk[41]) >>> 0;
+  var c = (t2 ^ rk[42]) >>> 0;
+  var d = (t3 ^ rk[43]) >>> 0;
+  for (var round = 9; round >= 1; round--) {
+    var o = 4 * round;
+    var s0 = (HG_AES_TD[0][a >>> 24] ^ HG_AES_TD[1][(d >>> 16) & 0xff] ^ HG_AES_TD[2][(c >>> 8) & 0xff] ^ HG_AES_TD[3][b & 0xff] ^ dw[o]) >>> 0;
+    var s1 = (HG_AES_TD[0][b >>> 24] ^ HG_AES_TD[1][(a >>> 16) & 0xff] ^ HG_AES_TD[2][(d >>> 8) & 0xff] ^ HG_AES_TD[3][c & 0xff] ^ dw[o + 1]) >>> 0;
+    var s2 = (HG_AES_TD[0][c >>> 24] ^ HG_AES_TD[1][(b >>> 16) & 0xff] ^ HG_AES_TD[2][(a >>> 8) & 0xff] ^ HG_AES_TD[3][d & 0xff] ^ dw[o + 2]) >>> 0;
+    var s3 = (HG_AES_TD[0][d >>> 24] ^ HG_AES_TD[1][(c >>> 16) & 0xff] ^ HG_AES_TD[2][(b >>> 8) & 0xff] ^ HG_AES_TD[3][a & 0xff] ^ dw[o + 3]) >>> 0;
+    a = s0;
+    b = s1;
+    c = s2;
+    d = s3;
+  }
+  var o0 = (((HG_AES_ISBOX[a >>> 24] << 24) | (HG_AES_ISBOX[(d >>> 16) & 0xff] << 16) | (HG_AES_ISBOX[(c >>> 8) & 0xff] << 8) | HG_AES_ISBOX[b & 0xff]) >>> 0) ^ rk[0];
+  var o1 = (((HG_AES_ISBOX[b >>> 24] << 24) | (HG_AES_ISBOX[(a >>> 16) & 0xff] << 16) | (HG_AES_ISBOX[(d >>> 8) & 0xff] << 8) | HG_AES_ISBOX[c & 0xff]) >>> 0) ^ rk[1];
+  var o2 = (((HG_AES_ISBOX[c >>> 24] << 24) | (HG_AES_ISBOX[(b >>> 16) & 0xff] << 16) | (HG_AES_ISBOX[(a >>> 8) & 0xff] << 8) | HG_AES_ISBOX[d & 0xff]) >>> 0) ^ rk[2];
+  var o3 = (((HG_AES_ISBOX[d >>> 24] << 24) | (HG_AES_ISBOX[(c >>> 16) & 0xff] << 16) | (HG_AES_ISBOX[(b >>> 8) & 0xff] << 8) | HG_AES_ISBOX[a & 0xff]) >>> 0) ^ rk[3];
+  return [o0 >>> 0, o1 >>> 0, o2 >>> 0, o3 >>> 0];
+}
+
+function hgAesCbcDecrypt(cipher, key, iv) {
+  if (!cipher || !cipher.length || cipher.length % 16 !== 0) return null;
+  var expanded = hgAesExpandKey(key);
+  var rk = expanded.rk;
+  var dw = expanded.dw;
+  var out = new Uint8Array(cipher.length);
+  var p0 = ((iv[0] << 24) | (iv[1] << 16) | (iv[2] << 8) | iv[3]) >>> 0;
+  var p1 = ((iv[4] << 24) | (iv[5] << 16) | (iv[6] << 8) | iv[7]) >>> 0;
+  var p2 = ((iv[8] << 24) | (iv[9] << 16) | (iv[10] << 8) | iv[11]) >>> 0;
+  var p3 = ((iv[12] << 24) | (iv[13] << 16) | (iv[14] << 8) | iv[15]) >>> 0;
+  for (var o = 0; o < cipher.length; o += 16) {
+    var c0 = ((cipher[o] << 24) | (cipher[o + 1] << 16) | (cipher[o + 2] << 8) | cipher[o + 3]) >>> 0;
+    var c1 = ((cipher[o + 4] << 24) | (cipher[o + 5] << 16) | (cipher[o + 6] << 8) | cipher[o + 7]) >>> 0;
+    var c2 = ((cipher[o + 8] << 24) | (cipher[o + 9] << 16) | (cipher[o + 10] << 8) | cipher[o + 11]) >>> 0;
+    var c3 = ((cipher[o + 12] << 24) | (cipher[o + 13] << 16) | (cipher[o + 14] << 8) | cipher[o + 15]) >>> 0;
+    var dec = hgAesDecryptBlockWords(c0, c1, c2, c3, rk, dw);
+    var d0 = (dec[0] ^ p0) >>> 0;
+    var d1 = (dec[1] ^ p1) >>> 0;
+    var d2 = (dec[2] ^ p2) >>> 0;
+    var d3 = (dec[3] ^ p3) >>> 0;
+    out[o] = d0 >>> 24;
+    out[o + 1] = (d0 >>> 16) & 0xff;
+    out[o + 2] = (d0 >>> 8) & 0xff;
+    out[o + 3] = d0 & 0xff;
+    out[o + 4] = d1 >>> 24;
+    out[o + 5] = (d1 >>> 16) & 0xff;
+    out[o + 6] = (d1 >>> 8) & 0xff;
+    out[o + 7] = d1 & 0xff;
+    out[o + 8] = d2 >>> 24;
+    out[o + 9] = (d2 >>> 16) & 0xff;
+    out[o + 10] = (d2 >>> 8) & 0xff;
+    out[o + 11] = d2 & 0xff;
+    out[o + 12] = d3 >>> 24;
+    out[o + 13] = (d3 >>> 16) & 0xff;
+    out[o + 14] = (d3 >>> 8) & 0xff;
+    out[o + 15] = d3 & 0xff;
+    p0 = c0;
+    p1 = c1;
+    p2 = c2;
+    p3 = c3;
+  }
+  return out;
+}
+
+function hgImageMime(bytes) {
+  if (!bytes || bytes.length < 4) return "";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image/png";
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return "image/gif";
+  if (
+    bytes.length > 12 &&
+    bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+    bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+  return "";
+}
+
+// 密文候选：原签名地址优先，失败再试无需鉴权的 WebP 变体。
+function hgCoverCandidates(source) {
+  var list = [];
+  var text = String(source || "");
+  if (/^https:\/\//i.test(text)) list.push(text);
+  var match = text.match(/^(https:\/\/[^/?#]+)(\/[^?#]*)/i);
+  if (match && /\.(?:jpe?g|png|bmp)$/i.test(match[2])) {
+    var webp = HUANGGUO_WEBP_BASE + match[2] + ".webp";
+    if (list.indexOf(webp) < 0) list.push(webp);
+  }
+  return list;
+}
+
+async function hgDecryptCover(source) {
+  if (!source || source.indexOf("data:") === 0) return source || "";
+  if (HUANGGUO_COVER_CACHE[source]) return HUANGGUO_COVER_CACHE[source];
+  var candidates = hgCoverCandidates(source);
+  var key = hgAsciiBytes(HUANGGUO_COVER_KEY);
+  var iv = hgAsciiBytes(HUANGGUO_COVER_IV);
+  for (var i = 0; i < candidates.length; i++) {
+    try {
+      var response = await Widget.http.get(candidates[i], {
+        headers: { "User-Agent": HG_UA, Accept: "image/avif,image/webp,image/*,*/*;q=0.8", Referer: HUANGGUO_SITE + "/" },
+        base64Data: true,
+      });
+      var status = Number(response && (response.statusCode || response.status)) || 0;
+      if (status >= 400) continue;
+      var data = response && response.data;
+      if (typeof data !== "string" || !data) continue;
+      var cipher = hgBase64ToBytes(data);
+      if (!cipher || !cipher.length || cipher.length % 16 !== 0) continue;
+      var plain = hgAesCbcDecrypt(cipher, key, iv);
+      var mime = hgImageMime(plain);
+      if (!mime) continue;
+      var url = "data:" + mime + ";base64," + hgBytesToBase64(plain);
+      HUANGGUO_COVER_CACHE[source] = url;
+      return url;
+    } catch (_) {
+      // 尝试下一个候选
+    }
+  }
+  return "";
+}
+
+// 未配置 Worker 时，把解析出的加密封面就地解密成 data URL。
+async function hgDecorateCovers(items) {
+  var list = items || [];
+  var index = 0;
+  async function run() {
+    while (index < list.length) {
+      var item = list[index++];
+      var source = item && item.coverUrl;
+      if (!source || source.indexOf("data:") === 0) continue;
+      var url = await hgDecryptCover(source);
+      if (url) {
+        item.coverUrl = url;
+        item.posterPath = url;
+        item.backdropPath = url;
+      }
+    }
+  }
+  var runners = [];
+  var count = Math.min(HUANGGUO_COVER_CONCURRENCY, list.length);
+  for (var i = 0; i < count; i++) runners.push(run());
+  await Promise.all(runners);
+  return list;
 }
 
 function hgListUrl(path, page, sort) {
@@ -311,7 +601,10 @@ async function hgLoadList(path, params, sort) {
   var pageUrl = hgListUrl(path, params.page, sort);
   var response = await hgGetPage(pageUrl, params.referer || HUANGGUO_SITE + "/");
   if (response.status >= 400 || !response.html) return [];
-  return hgParseCards(response.html, await hgWorkerUrl(params), sort || "latest");
+  var worker = await hgWorkerUrl(params);
+  var items = hgParseCards(response.html, worker, sort || "latest");
+  if (!worker && items.length) items = await hgDecorateCovers(items);
+  return items;
 }
 
 async function loadRecommend(params) { return hgLoadList("/recommend", params); }
@@ -384,7 +677,9 @@ async function loadDetail(link) {
   if (!response.html || response.status >= 400) return null;
   var data = hgExtractVideoData(response.html);
   var posterSource = identity.cover || (data && (data.posterSrc || data.coverSrc)) || "";
-  var poster = hgCoverUrl(hgAbsoluteUrl(posterSource), await hgWorkerUrl());
+  var worker = await hgWorkerUrl();
+  var posterRaw = hgAbsoluteUrl(posterSource);
+  var poster = worker ? hgCoverUrl(posterRaw, worker) : (posterRaw ? (await hgDecryptCover(posterRaw)) || posterRaw : "");
   var titleMatch = response.html.match(/<meta\b[^>]*(?:property|name)=["']og:title["'][^>]*content=["']([^"']+)/i);
   var descriptionMatch = response.html.match(/<meta\b[^>]*(?:property|name)=["']og:description["'][^>]*content=["']([^"']+)/i);
   var title = hgText(titleMatch && titleMatch[1]) || hgText(data && data.title) || "黄果短剧 " + identity.id;
@@ -392,7 +687,7 @@ async function loadDetail(link) {
   var description = hgText(descriptionMatch && descriptionMatch[1]) || hgText(data && data.description) || title;
   var episodes = hgEpisodes(data);
   var episodeItems = episodes.map((episode) => {
-    var episodeLink = hgMakeLink(identity.id, poster, episode);
+    var episodeLink = hgMakeLink(identity.id, posterRaw, episode);
     var epData = data.trackingEpisodes[String(episode)] || {};
     return {
       id: episodeLink,
@@ -534,5 +829,9 @@ if (typeof module !== "undefined" && module && module.exports) {
     loadResource: loadResource,
     hgParseCards: hgParseCards,
     hgResourceIdentity: hgResourceIdentity,
+    hgDecryptCover: hgDecryptCover,
+    hgAesCbcDecrypt: hgAesCbcDecrypt,
+    hgBase64ToBytes: hgBase64ToBytes,
+    hgBytesToBase64: hgBytesToBase64,
   };
 }

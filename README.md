@@ -16,14 +16,14 @@
 ### 花都影视（Huadu）
 
 - 文件：[`forward-widgets/huadu/huadu.js`](forward-widgets/huadu/huadu.js)
-- 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（30 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
+- 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（35 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
 - 现网抽样（人工执行）：[`forward-widgets/huadu/tests/live-smoke.test.js`](forward-widgets/huadu/tests/live-smoke.test.js)
 - 类型：ForwardWidget 视频模块
-- 版本：`1.0.8`
+- 版本：`1.0.10`
 - 数据来源：站点自带 JSON 接口（列表/分类）+ SSR 详情页与播放页；不使用首页推荐 HTML
 - 功能：最新更新、分类浏览（16 个分类）、分页（站点上限 20 页 × 20 条）、搜索（搜索页为主，suggest 为降级并对死链做存活校验）、详情、m3u8 播放资源
-- 稳定性：从发布页 `js/config.js` 自动发现入口（纯文本解析，不使用 `eval`）、候选清单缓存、`lastGood` 记忆、同域重试、失败域 10 分钟冷却、内置候选域兜底；错误按类型区分，不把失败伪装成空数组
-- 修复：`id` 与 `link` 统一为 Rex 详情处理器使用的 `huadu://vod/{id}` 身份；移除会误触外部匹配的 `originalTitle`；列表/详情恢复 `coverUrl`、`posterPath` 与详情海报字段
+- 稳定性：从发布页 `js/config.js` 自动发现入口（纯文本解析，不使用 `eval`，支持 `"https://" + p + ".domain"` 动态拼接）、候选清单缓存、`lastGood` 记忆、同域重试、失败域 10 分钟冷却、内置候选域兜底；错误按类型区分，不把失败伪装成空数组
+- 修复：`id` 与 `link` 统一为 Rex 详情处理器使用的 `huadu://vod/{id}` 身份；移除会误触外部匹配的 `originalTitle`；列表/详情恢复 `coverUrl`、`posterPath` 与详情海报字段；详情改为新版 `/index.php/voddetail{id}.html` 路由（旧路由兜底）
 - 安全：仅 https + 域名族白名单，拒绝凭据 / IP 字面量 / 本机与内网地址；不执行远端脚本
 - 内容提示：包含成人内容，仅供成年人使用
 
@@ -31,10 +31,10 @@
 
 - 文件：[`forward-widgets/huangguo/huangguo.js`](forward-widgets/huangguo/huangguo.js)
 - 离线回归：[`forward-widgets/huangguo/tests/offline.test.js`](forward-widgets/huangguo/tests/offline.test.js)
-- 版本：`0.1.1`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
+- 版本：`0.1.3`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
 - 播放：详情只读剧集清单；用户选择剧集后请求 `/api/videos/{id}/episodes/{ep}/playback`，不把临时签名地址放入详情缓存
 - 分类：AI 换脸与 AI 魔改页面当前返回 HTTP 410，专题 `mingxing-huanlian` 与 `magic-drama` 也返回 410；新版本隐藏这些已下线入口，保留仍可访问的 AI 短剧、AI 漫剧、专题与榜单
-- 封面：兼容旧模块持久化的 `hg_cover_worker`；新安装可在 `coverWorker` 全局参数配置自己的封面解密 Worker
+- 封面：兼容旧模块持久化的 `hg_cover_worker`；新安装可在 `coverWorker` 全局参数配置自己的封面解密 Worker。未配置 Worker 时使用站点公开的 AES-128-CBC/NoPadding 协议本地解密成 data URL，不再依赖外部服务
 - 参考：Rex 加密格式说明见 [rex-widget-libs](https://github.com/baranwang/rex-widget-libs)；加密模块检查工具为 [rex-decrypt](https://rex-decrypt.pages.dev/)，不作为模块运行依赖
 
 ## Userscripts

@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
@@ -82,7 +83,9 @@ test("详情页从 videoInitialData 提取集数并延迟取流", async function
   const detail = await api.loadDetail("hg://detail/123/");
   assert.strictEqual(detail.title, "测试短剧");
   assert.deepStrictEqual(Array.from(detail.episodeItems, (item) => item.episodeNumber), [1, 2]);
-  assert.strictEqual(calls.gets.length, 1, "详情加载不得预取每集的签名播放地址");
+  const detailGets = calls.gets.filter((c) => c.url.indexOf("/video/123/") >= 0);
+  assert.strictEqual(detailGets.length, 1, "详情加载不得预取每集的签名播放地址");
+  assert.strictEqual(detail.posterPath, "https://pic.example/cover.jpeg", "解密失败时保留原始封面地址");
 });
 
 test("播放时按剧集调用站点播放 API 并带 CDN 请求头", async function () {
@@ -200,4 +203,64 @@ test("播放接口瞬时失败时自动重试一次", async function () {
   assert.strictEqual(attempts, 2);
   assert.strictEqual(resources.length, 1);
   assert.strictEqual(resources[0].url, "https://cdn.example/retry.m3u8");
+});
+
+// 站点封面为 AES-128-CBC / NoPadding 密文；用同一公开 key/IV 造夹具。
+function encryptCover(payloadBytes) {
+  const key = Buffer.from("f5d965df75336270", "utf8");
+  const iv = Buffer.from("97b60394abc2fbe1", "utf8");
+  const padded = Buffer.alloc(Math.max(16, Math.ceil(payloadBytes.length / 16) * 16));
+  payloadBytes.copy(padded);
+  const cipher = crypto.createCipheriv("aes-128-cbc", key, iv);
+  cipher.setAutoPadding(false);
+  return Buffer.concat([cipher.update(padded), cipher.final()]).toString("base64");
+}
+
+test("封面解密：AES-128-CBC/NoPadding 还原 JPEG 头", function () {
+  const { api } = loadModule();
+  const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(60, 0x41)]);
+  const cipher = api.hgBase64ToBytes(encryptCover(jpeg));
+  const plain = Buffer.from(
+    api.hgAesCbcDecrypt(
+      cipher,
+      Buffer.from("f5d965df75336270", "utf8"),
+      Buffer.from("97b60394abc2fbe1", "utf8"),
+    ),
+  );
+  assert.deepStrictEqual(plain.subarray(0, 4), jpeg.subarray(0, 4));
+  assert.strictEqual(api.hgBytesToBase64(new Uint8Array([0xff, 0xd8, 0xff])).slice(0, 4), "/9j/");
+});
+
+test("列表封面：未配置 Worker 时本地解密为 data URL", async function () {
+  const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(80, 0x42)]);
+  const base64 = encryptCover(jpeg);
+  const { api } = loadModule({
+    get: async (url) => {
+      if (url.indexOf("/ai-duanju") >= 0) return { statusCode: 200, data: cardsHtml };
+      return { statusCode: 200, data: base64 };
+    },
+  });
+  const items = await api.loadAiDuanju({ page: 1 });
+  assert.strictEqual(items.length, 1);
+  assert.match(items[0].coverUrl, /^data:image\/jpeg;base64,/);
+  const decoded = Buffer.from(items[0].coverUrl.split(",")[1], "base64");
+  assert.strictEqual(decoded[0], 0xff);
+  assert.strictEqual(decoded[1], 0xd8);
+  assert.strictEqual(items[0].posterPath, items[0].coverUrl);
+  assert.strictEqual(items[0].backdropPath, items[0].coverUrl);
+});
+
+test("列表封面：配置 coverWorker 时直接走 Worker，不本地解密", async function () {
+  const { api, calls } = loadModule({
+    get: async (url) => {
+      if (url.indexOf("/ai-duanju") >= 0) return { statusCode: 200, data: cardsHtml };
+      return { statusCode: 200, data: "not-an-image" };
+    },
+  });
+  const items = await api.loadAiDuanju({ page: 1, coverWorker: "https://worker.example/decrypt" });
+  assert.strictEqual(
+    items[0].coverUrl,
+    "https://worker.example/decrypt?url=" + encodeURIComponent("https://huangguoai.com/cover/123.jpeg"),
+  );
+  assert.strictEqual(calls.gets.filter((c) => c.url.indexOf("worker.example") >= 0).length, 0);
 });
