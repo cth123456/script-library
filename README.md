@@ -31,10 +31,10 @@
 
 - 文件：[`forward-widgets/huangguo/huangguo.js`](forward-widgets/huangguo/huangguo.js)
 - 离线回归：[`forward-widgets/huangguo/tests/offline.test.js`](forward-widgets/huangguo/tests/offline.test.js)
-- 版本：`0.1.4`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
-- 播放：详情只读剧集清单；用户选择剧集后请求 `/api/videos/{id}/episodes/{ep}/playback`，不把临时签名地址放入详情缓存
+- 版本：`0.1.5`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
+- 播放：详情只读剧集清单；用户选择剧集后请求 `/api/videos/{id}/episodes/{ep}/playback`，优先只返回 `main` HLS 并交给系统播放器，不向 m3u8/分片强加站点 CDN 不要求的请求头，也不把临时签名地址放入详情缓存
 - 分类：AI 换脸与 AI 魔改页面当前返回 HTTP 410，专题 `mingxing-huanlian` 与 `magic-drama` 也返回 410；新版本隐藏这些已下线入口，保留仍可访问的 AI 短剧、AI 漫剧、专题与榜单
-- 封面：优先使用站点官方 `new2.qnlycc.cn` 的长期缓存 WebP 备用地址（普通 https 图片 URL）；兼容旧模块持久化的 `hg_cover_worker`，也可在 `coverWorker` 配置自己的解密 Worker（`?u=` / `?url=` 均可）。备用本地 AES-128-CBC/NoPadding 解密仍保留
+- 封面：优先使用站点官方 `new2.qnlycc.cn` 的长期缓存 WebP 备用地址；探测到持久化的 `coverWorker` 返回错误（如旧 Worker 拒绝新图床）时自动清除并回退本地 AES-128-CBC/NoPadding 解密
 - 参考：Rex 加密格式说明见 [rex-widget-libs](https://github.com/baranwang/rex-widget-libs)；加密模块检查工具为 [rex-decrypt](https://rex-decrypt.pages.dev/)，不作为模块运行依赖
 
 ## Userscripts

@@ -3,7 +3,7 @@ WidgetMetadata = {
   title: "黄果短剧",
   description: "黄果短剧列表、分类、搜索、详情及按集实时取播放地址。",
   author: "Codex",
-  version: "0.1.4",
+  version: "0.1.5",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   site: "https://huangguoai.com",
@@ -131,6 +131,7 @@ WidgetMetadata = {
 var HUANGGUO_SITE = "https://huangguoai.com";
 var HUANGGUO_STORAGE_WORKER = "hg_cover_worker";
 var HG_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36";
+var HUANGGUO_WORKER_PROBES = Object.create(null);
 var HUANGGUO_CATEGORIES = {
   aiDuanju: "/ai-duanju/",
   aiManju: "/ai-manju/",
@@ -214,6 +215,56 @@ function hgCoverUrl(source, worker) {
   if (source.indexOf(worker) === 0) return source;
   if (/[?&](?:u|url)=/i.test(worker)) return worker + encodeURIComponent(source);
   return worker + (worker.indexOf("?") >= 0 ? "&" : "?") + "u=" + encodeURIComponent(source);
+}
+
+async function hgCoverWorkerAvailable(source, worker) {
+  if (!source || !worker) return false;
+  if (HUANGGUO_WORKER_PROBES[worker] !== undefined) return HUANGGUO_WORKER_PROBES[worker];
+  try {
+    var response = await Widget.http.get(hgCoverUrl(source, worker), {
+      headers: { "User-Agent": HG_UA, Accept: "image/avif,image/webp,image/*,*/*;q=0.8", Referer: HUANGGUO_SITE + "/" },
+    });
+    var status = Number(response && (response.statusCode || response.status)) || 0;
+    var contentType = "";
+    var responseHeaders = response && response.headers;
+    if (responseHeaders) {
+      for (var key in responseHeaders) {
+        if (key.toLowerCase() === "content-type") contentType = String(responseHeaders[key]);
+      }
+    }
+    var available = status >= 200 && status < 300 && (!contentType || /^image\//i.test(contentType));
+    HUANGGUO_WORKER_PROBES[worker] = available;
+    if (!available) await hgForgetCoverWorker(worker);
+    return available;
+  } catch (_) {
+    HUANGGUO_WORKER_PROBES[worker] = false;
+    await hgForgetCoverWorker(worker);
+    return false;
+  }
+}
+
+async function hgForgetCoverWorker(worker) {
+  if (!worker) return;
+  try {
+    if (Widget.storage && typeof Widget.storage.get === "function" && typeof Widget.storage.remove === "function") {
+      var saved = await Widget.storage.get(HUANGGUO_STORAGE_WORKER);
+      if (typeof saved === "string" && saved.replace(/\/+$/, "") === worker) {
+        await Widget.storage.remove(HUANGGUO_STORAGE_WORKER);
+      }
+    }
+  } catch (_) {}
+}
+
+function hgUnwrapCoverWorker(source, worker) {
+  var text = String(source || "");
+  if (!worker || text.indexOf(worker) !== 0) return text;
+  var match = text.match(/[?&](?:u|url)=([^&#]*)/i);
+  if (!match) return text;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch (_) {
+    return match[1];
+  }
 }
 
 /* ---------------- 封面解密（站点图床 AES-128-CBC / NoPadding） ----------------
@@ -604,7 +655,9 @@ async function hgLoadList(path, params, sort) {
   var response = await hgGetPage(pageUrl, params.referer || HUANGGUO_SITE + "/");
   if (response.status >= 400 || !response.html) return [];
   var worker = await hgWorkerUrl(params);
-  var items = hgParseCards(response.html, worker, sort || "latest");
+  var rawItems = hgParseCards(response.html, "", sort || "latest");
+  if (worker && rawItems.length && !(await hgCoverWorkerAvailable(rawItems[0].coverUrl, worker))) worker = "";
+  var items = worker ? hgParseCards(response.html, worker, sort || "latest") : rawItems;
   if (!worker && items.length) items = await hgDecorateCovers(items);
   return items;
 }
@@ -681,6 +734,10 @@ async function loadDetail(link) {
   var posterSource = identity.cover || (data && (data.posterSrc || data.coverSrc)) || "";
   var worker = await hgWorkerUrl();
   var posterRaw = hgAbsoluteUrl(posterSource);
+  if (worker && !(await hgCoverWorkerAvailable(posterRaw, worker))) {
+    posterRaw = hgAbsoluteUrl(hgUnwrapCoverWorker(posterRaw, worker));
+    worker = "";
+  }
   var poster = worker ? hgCoverUrl(posterRaw, worker) : (posterRaw ? (await hgDecryptCover(posterRaw)) || posterRaw : "");
   var titleMatch = response.html.match(/<meta\b[^>]*(?:property|name)=["']og:title["'][^>]*content=["']([^"']+)/i);
   var descriptionMatch = response.html.match(/<meta\b[^>]*(?:property|name)=["']og:description["'][^>]*content=["']([^"']+)/i);
@@ -795,6 +852,7 @@ async function loadResource(params) {
     var streamUrl = playback.streams[streamNames[i]];
     if (typeof streamUrl === "string" && /^https:\/\//i.test(streamUrl) && streamCandidates.indexOf(streamUrl) < 0) {
       streamCandidates.push(streamUrl);
+      if (streamNames[i] === "main") break;
     }
   }
   if (!streamCandidates.length) return [];
@@ -804,15 +862,12 @@ async function loadResource(params) {
     headers[cdn.authKey] = cdn.authValue;
     headers["x-cdn-app"] = cdn.app;
   }
-  headers["User-Agent"] = commonHeaders["User-Agent"];
-  headers.Referer = identity.referer;
-  headers.Origin = HUANGGUO_SITE;
   return streamCandidates.map(function (url, index) {
     return {
       name: "第 " + identity.episode + " 集" + (index ? " · 备用" + index : ""),
       description: "HLS 播放资源（播放时实时获取）",
       url: url,
-      playerType: "app",
+      playerType: "system",
       customHeaders: Object.keys(headers).length ? headers : undefined,
     };
   });

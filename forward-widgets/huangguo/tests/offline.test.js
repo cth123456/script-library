@@ -16,6 +16,7 @@ function loadModule(options = {}) {
     storage: {
       async get(key) { return storage.get(key); },
       async set(key, value) { storage.set(key, value); },
+      async remove(key) { storage.delete(key); },
     },
     http: {
       async get(url, requestOptions) {
@@ -30,7 +31,7 @@ function loadModule(options = {}) {
   };
   const context = { Widget: widget, module: { exports: {} }, console: { warn() {}, log() {} } };
   vm.runInNewContext(source, context, { timeout: 1000 });
-  return { api: context.module.exports, metadata: context.WidgetMetadata, calls };
+  return { api: context.module.exports, metadata: context.WidgetMetadata, calls, storage };
 }
 
 const cardsHtml = [
@@ -108,7 +109,10 @@ test("播放时按剧集调用站点播放 API 并带 CDN 请求头", async func
   assert.strictEqual(resources[0].url, "https://cdn.example/stream.m3u8?sig=temporary");
   assert.strictEqual(resources[0].customHeaders["x-cdn-auth"], "temporary-auth");
   assert.strictEqual(resources[0].customHeaders["x-cdn-app"], "150");
-  assert.match(resources[0].customHeaders.Referer, /huangguoai\.com\/video\/123\//);
+  assert.strictEqual(resources[0].customHeaders.Referer, undefined);
+  assert.strictEqual(resources[0].customHeaders.Origin, undefined);
+  assert.strictEqual(resources[0].customHeaders["User-Agent"], undefined);
+  assert.strictEqual(resources[0].playerType, "system");
   assert.match(calls.posts[0].url, /\/api\/videos\/123\/episodes\/2\/playback$/);
   assert.strictEqual(calls.posts[0].body, "{}");
   assert.strictEqual(calls.posts[0].requestOptions.timeout, 10000);
@@ -134,9 +138,8 @@ test("分片不要求认证头时不向资源或第三方分片域发送 CDN 认
   });
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
   assert.strictEqual(resources.length, 1);
-  assert.strictEqual(resources[0].customHeaders["x-cdn-auth"], undefined);
-  assert.strictEqual(resources[0].customHeaders["x-cdn-app"], undefined);
-  assert.strictEqual(resources[0].playerType, "app");
+  assert.strictEqual(resources[0].customHeaders, undefined);
+  assert.strictEqual(resources[0].playerType, "system");
 });
 
 test("播放 API 返回其他剧集时拒绝错误地址", async function () {
@@ -158,7 +161,29 @@ test("播放 API 返回其他剧集时拒绝错误地址", async function () {
   assert.strictEqual(resources.length, 0);
 });
 
-test("播放 API 缺少 main 时回退到 hevc / preview 备选字段", async function () {
+test("播放 API 优先使用 main；缺少 main 时回退 hevc / preview", async function () {
+  const mainFirst = loadModule({
+    post: async () => ({
+      statusCode: 200,
+      data: {
+        status: 1,
+        data: {
+          id: "123",
+          ep: 1,
+          manifest_method: "GET",
+          streams: {
+            main: "https://cdn.example/main.m3u8",
+            hevc: "https://cdn.example/hevc.m3u8",
+            preview: "https://cdn.example/preview.m3u8",
+          },
+        },
+      },
+    }),
+  });
+  const mainResources = await mainFirst.api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
+  assert.strictEqual(mainResources.length, 1);
+  assert.strictEqual(mainResources[0].url, "https://cdn.example/main.m3u8");
+
   const { api } = loadModule({
     post: async () => ({
       statusCode: 200,
@@ -262,5 +287,22 @@ test("列表封面：配置 coverWorker 时直接走 Worker，不本地解密", 
     items[0].coverUrl,
     "https://worker.example/decrypt?u=" + encodeURIComponent("https://huangguoai.com/cover/123.jpeg"),
   );
-  assert.strictEqual(calls.gets.filter((c) => c.url.indexOf("worker.example") >= 0).length, 0);
+  assert.strictEqual(calls.gets.filter((c) => c.url.indexOf("worker.example") >= 0).length, 1, "Worker 应先做一次可用性检查");
+});
+
+test("已保存的失效 Worker 返回 403 时清除并回退本地解密", async function () {
+  const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(80, 0x43)]);
+  const base64 = encryptCover(jpeg);
+  const { api, calls, storage } = loadModule({
+    get: async (url) => {
+      if (url.indexOf("/ai-duanju") >= 0) return { statusCode: 200, data: cardsHtml };
+      if (url.indexOf("worker.example") >= 0) return { statusCode: 403, data: "host not allowed" };
+      return { statusCode: 200, data: base64 };
+    },
+  });
+  const items = await api.loadAiDuanju({ page: 1, coverWorker: "https://worker.example/decrypt" });
+  assert.strictEqual(items.length, 1);
+  assert.match(items[0].coverUrl, /^data:image\/jpeg;base64,/);
+  assert.strictEqual(storage.has("hg_cover_worker"), false, "失效 Worker 地址应从存储中清除");
+  assert.strictEqual(calls.gets.filter((c) => c.url.indexOf("worker.example") >= 0).length, 1);
 });
