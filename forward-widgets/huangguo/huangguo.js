@@ -3,7 +3,7 @@ WidgetMetadata = {
   title: "黄果短剧",
   description: "黄果短剧列表、分类、搜索、详情及按集实时取播放地址。",
   author: "Codex",
-  version: "0.1.5",
+  version: "0.1.6",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   site: "https://huangguoai.com",
@@ -21,19 +21,19 @@ WidgetMetadata = {
     {
       title: "热门推荐",
       functionName: "loadRecommend",
-      cacheDuration: 600,
+      cacheDuration: 0,
       params: [{ name: "page", title: "页码", type: "page", value: "1" }],
     },
     {
       title: "最近上新",
       functionName: "loadNewest",
-      cacheDuration: 600,
+      cacheDuration: 0,
       params: [{ name: "page", title: "页码", type: "page", value: "1" }],
     },
     {
       title: "AI短剧",
       functionName: "loadAiDuanju",
-      cacheDuration: 600,
+      cacheDuration: 0,
       params: [
         {
           name: "channel",
@@ -53,7 +53,7 @@ WidgetMetadata = {
     {
       title: "AI漫剧",
       functionName: "loadAiManju",
-      cacheDuration: 600,
+      cacheDuration: 0,
       params: [
         {
           name: "channel",
@@ -73,7 +73,7 @@ WidgetMetadata = {
     {
       title: "专题",
       functionName: "loadTopics",
-      cacheDuration: 600,
+      cacheDuration: 0,
       params: [
         {
           name: "topic",
@@ -93,7 +93,7 @@ WidgetMetadata = {
     {
       title: "排行榜",
       functionName: "loadRanking",
-      cacheDuration: 600,
+      cacheDuration: 0,
       params: [
         {
           name: "ranking",
@@ -276,6 +276,7 @@ var HUANGGUO_COVER_KEY = "f5d965df75336270";
 var HUANGGUO_COVER_IV = "97b60394abc2fbe1";
 var HUANGGUO_WEBP_BASE = "https://new2.qnlycc.cn";
 var HUANGGUO_COVER_CONCURRENCY = 4;
+var HUANGGUO_COVER_LIST_BUDGET = 2 * 1024 * 1024;
 var HUANGGUO_COVER_CACHE = {};
 
 var HG_B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -537,17 +538,27 @@ async function hgDecryptCover(source) {
 async function hgDecorateCovers(items) {
   var list = items || [];
   var index = 0;
+  var remainingBytes = HUANGGUO_COVER_LIST_BUDGET;
   async function run() {
     while (index < list.length) {
+      if (remainingBytes <= 0) break;
       var item = list[index++];
       var source = item && item.coverUrl;
       if (!source || source.indexOf("data:") === 0) continue;
       var url = await hgDecryptCover(source);
-      if (url) {
-        item.coverUrl = url;
-        item.posterPath = url;
-        item.backdropPath = url;
+      if (!url || url.indexOf("data:image/") !== 0) {
+        item.coverUrl = "";
+        continue;
       }
+      var comma = url.indexOf(",");
+      var payloadLength = comma >= 0 ? url.length - comma - 1 : url.length;
+      var imageBytes = Math.floor(payloadLength * 3 / 4);
+      if (imageBytes > remainingBytes) {
+        item.coverUrl = "";
+        continue;
+      }
+      item.coverUrl = url;
+      remainingBytes -= imageBytes;
     }
   }
   var runners = [];
@@ -641,8 +652,6 @@ function hgParseCards(html, worker, channel) {
       description: hgText(episodeMatch && episodeMatch[1]),
       link: link,
       coverUrl: poster,
-      posterPath: poster,
-      backdropPath: poster,
       rating: scoreMatch ? parseFloat(hgText(scoreMatch[1]).replace(/[^0-9.]/g, "")) || undefined : undefined,
     });
   }
@@ -756,8 +765,6 @@ async function loadDetail(link) {
       title: "第 " + episode + " 集",
       episodeNumber: episode,
       duration: Number(epData.drama_duration) || undefined,
-      posterPath: poster,
-      coverUrl: poster,
     };
   });
   return {
@@ -768,9 +775,7 @@ async function loadDetail(link) {
     title: title,
     description: description,
     releaseDate: data && data.time ? String(data.time).slice(0, 10) : undefined,
-    posterPath: poster,
     coverUrl: poster,
-    backdropPath: poster,
     episodeItems: episodeItems,
   };
 }
@@ -862,15 +867,27 @@ async function loadResource(params) {
     headers[cdn.authKey] = cdn.authValue;
     headers["x-cdn-app"] = cdn.app;
   }
-  return streamCandidates.map(function (url, index) {
-    return {
-      name: "第 " + identity.episode + " 集" + (index ? " · 备用" + index : ""),
+  var resources = [];
+  streamCandidates.forEach(function (url, index) {
+    var line = index ? " · 备用" + index : "";
+    var baseName = "第 " + identity.episode + " 集" + line;
+    var customHeaders = Object.keys(headers).length ? headers : undefined;
+    resources.push({
+      name: baseName + " · 系统播放器",
       description: "HLS 播放资源（播放时实时获取）",
       url: url,
       playerType: "system",
-      customHeaders: Object.keys(headers).length ? headers : undefined,
-    };
+      customHeaders: customHeaders,
+    });
+    resources.push({
+      name: baseName + " · App 播放器",
+      description: "HLS 播放资源（播放时实时获取）",
+      url: url,
+      playerType: "app",
+      customHeaders: customHeaders,
+    });
   });
+  return resources;
 }
 
 if (typeof module !== "undefined" && module && module.exports) {

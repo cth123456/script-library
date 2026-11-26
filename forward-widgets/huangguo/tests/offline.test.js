@@ -48,6 +48,7 @@ test("元数据保留可用分类并移除站点已下线入口", function () {
   assert.ok(!titles.includes("AI换脸"));
   assert.ok(!titles.includes("AI魔改"));
   assert.strictEqual(metadata.detailCacheDuration, 0);
+  assert.ok(metadata.modules.filter((item) => item.functionName !== "loadResource").every((item) => item.cacheDuration === 0));
 });
 
 test("列表解析封面、详情身份与卡片字段", function () {
@@ -86,7 +87,7 @@ test("详情页从 videoInitialData 提取集数并延迟取流", async function
   assert.deepStrictEqual(Array.from(detail.episodeItems, (item) => item.episodeNumber), [1, 2]);
   const detailGets = calls.gets.filter((c) => c.url.indexOf("/video/123/") >= 0);
   assert.strictEqual(detailGets.length, 1, "详情加载不得预取每集的签名播放地址");
-  assert.strictEqual(detail.posterPath, "https://pic.example/cover.jpeg", "解密失败时保留原始封面地址");
+  assert.strictEqual(detail.coverUrl, "https://pic.example/cover.jpeg", "解密失败时保留原始封面地址");
 });
 
 test("播放时按剧集调用站点播放 API 并带 CDN 请求头", async function () {
@@ -105,8 +106,11 @@ test("播放时按剧集调用站点播放 API 并带 CDN 请求头", async func
   };
   const { api, calls } = loadModule({ post: async () => response });
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=2", episodeNumber: 2 });
-  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources.length, 2);
   assert.strictEqual(resources[0].url, "https://cdn.example/stream.m3u8?sig=temporary");
+  assert.strictEqual(resources[0].playerType, "system");
+  assert.strictEqual(resources[1].playerType, "app");
+  assert.strictEqual(resources[1].url, resources[0].url);
   assert.strictEqual(resources[0].customHeaders["x-cdn-auth"], "temporary-auth");
   assert.strictEqual(resources[0].customHeaders["x-cdn-app"], "150");
   assert.strictEqual(resources[0].customHeaders.Referer, undefined);
@@ -137,8 +141,9 @@ test("分片不要求认证头时不向资源或第三方分片域发送 CDN 认
     }),
   });
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
-  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources.length, 2);
   assert.strictEqual(resources[0].customHeaders, undefined);
+  assert.strictEqual(resources[1].customHeaders, undefined);
   assert.strictEqual(resources[0].playerType, "system");
 });
 
@@ -181,8 +186,9 @@ test("播放 API 优先使用 main；缺少 main 时回退 hevc / preview", asyn
     }),
   });
   const mainResources = await mainFirst.api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
-  assert.strictEqual(mainResources.length, 1);
+  assert.strictEqual(mainResources.length, 2);
   assert.strictEqual(mainResources[0].url, "https://cdn.example/main.m3u8");
+  assert.strictEqual(mainResources[1].url, mainResources[0].url);
 
   const { api } = loadModule({
     post: async () => ({
@@ -199,9 +205,11 @@ test("播放 API 优先使用 main；缺少 main 时回退 hevc / preview", asyn
     }),
   });
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
-  assert.strictEqual(resources.length, 2);
+  assert.strictEqual(resources.length, 4);
   assert.strictEqual(resources[0].url, "https://cdn.example/hevc.m3u8");
-  assert.strictEqual(resources[1].url, "https://cdn.example/preview.m3u8");
+  assert.strictEqual(resources[1].playerType, "app");
+  assert.strictEqual(resources[2].url, "https://cdn.example/preview.m3u8");
+  assert.strictEqual(resources[3].playerType, "app");
 });
 
 test("播放接口瞬时失败时自动重试一次", async function () {
@@ -226,7 +234,7 @@ test("播放接口瞬时失败时自动重试一次", async function () {
   });
   const resources = await api.loadResource({ link: "hg://detail/123/?ep=1", episodeNumber: 1 });
   assert.strictEqual(attempts, 2);
-  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources.length, 2);
   assert.strictEqual(resources[0].url, "https://cdn.example/retry.m3u8");
 });
 
@@ -271,8 +279,29 @@ test("列表封面：未配置 Worker 时本地解密为 data URL", async functi
   const decoded = Buffer.from(items[0].coverUrl.split(",")[1], "base64");
   assert.strictEqual(decoded[0], 0xff);
   assert.strictEqual(decoded[1], 0xd8);
-  assert.strictEqual(items[0].posterPath, items[0].coverUrl);
-  assert.strictEqual(items[0].backdropPath, items[0].coverUrl);
+  assert.strictEqual(items[0].posterPath, undefined);
+  assert.strictEqual(items[0].backdropPath, undefined);
+});
+
+test("列表封面：内联解密图片总量受桥接预算限制", async function () {
+  const imageCount = 12;
+  const cards = Array.from({ length: imageCount }, (_, index) =>
+    '<div class="hg-drama-card"><a href="/video/' + (200 + index) + '/"><img data-src="https://pic.qnlycc.cn/upload/' + index + '.jpeg"></a><div class="hg-drama-card__title"><a>短剧 ' + index + '</a></div></div>'
+  ).join("");
+  const html = '<div class="hg-card-grid is-active" data-channel="latest">' + cards + "</div>";
+  const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(600 * 1024, 0x44)]);
+  const base64 = encryptCover(jpeg);
+  const { api } = loadModule({
+    get: async (url) => url.indexOf("/newest") >= 0
+      ? { statusCode: 200, data: html }
+      : { statusCode: 200, data: base64 },
+  });
+  const items = await api.loadNewest({ page: 1 });
+  assert.strictEqual(items.length, imageCount);
+  const jsonBytes = Buffer.byteLength(JSON.stringify(items));
+  assert.ok(jsonBytes < 3 * 1024 * 1024, "列表结果应低于 3 MiB：" + jsonBytes);
+  assert.ok(items.some((item) => item.coverUrl.indexOf("data:image/jpeg;base64,") === 0));
+  assert.ok(items.some((item) => !item.coverUrl), "预算耗尽后应省略后续内联封面");
 });
 
 test("列表封面：配置 coverWorker 时直接走 Worker，不本地解密", async function () {
