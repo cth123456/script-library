@@ -3,7 +3,7 @@ WidgetMetadata = {
   title: "黄果短剧",
   description: "黄果短剧列表、分类、搜索、详情及按集实时取播放地址。",
   author: "Codex",
-  version: "0.1.7",
+  version: "0.1.8",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   site: "https://huangguoai.com",
@@ -14,7 +14,7 @@ WidgetMetadata = {
       title: "封面解密 Worker",
       type: "input",
       value: "",
-      description: "留空则使用站点官方 WebP 备用地址；如有自己的 AES 图片解密 Worker，可填 Worker 地址（?u= 或 ?url= 形式）。",
+      description: "输入已部署的 HTTPS 封面解密 Worker（如 /?u= 地址）；留空时本地解密封面，受客户端图片数据支持和列表体积限制影响。",
     },
   ],
   modules: [
@@ -823,7 +823,7 @@ function hgResourceIdentity(params) {
 
 async function loadResource(params) {
   params = params || {};
-  var directVideoUrl = String(params.videoUrl || "").trim();
+  var directVideoUrl = hgPlayableDirectUrl(params.videoUrl) ? String(params.videoUrl).trim() : "";
   var directUrl = String(params.url || "").trim();
   var direct = directVideoUrl && /^https:\/\//i.test(directVideoUrl)
     ? directVideoUrl

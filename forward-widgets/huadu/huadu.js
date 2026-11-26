@@ -32,7 +32,7 @@
 WidgetMetadata = {
   id: "forward.huadu.vod",
   title: "花都影视",
-  version: "1.0.10",
+  version: "1.0.11",
   requiredVersion: "0.0.1",
   description:
     "花都影视（花都资源）成人内容模块。使用站点自带 JSON 接口提供最新更新、分类浏览、分页、搜索、详情，并解析播放页得到 m3u8 播放资源；带发布入口自动发现、候选域缓存、lastGood 与失败域冷却。",
@@ -1003,6 +1003,11 @@ function huaduExtractId(value) {
   return "";
 }
 
+function huaduPlayableDirectUrl(value) {
+  var text = String(value || "").trim();
+  return /^https:\/\//i.test(text) && /\.(?:m3u8|mp4|m4v|mov|mkv|mpd|flv)(?:[?#]|$)/i.test(text);
+}
+
 // 通用卡片解析：搜索页 / 分类页 / 详情页的「猜你喜欢」
 function huaduParseCards(html) {
   var source = huaduDecodeHtml(String(html || ""));
@@ -1341,13 +1346,13 @@ async function loadDetail(link) {
 
 async function loadResource(params) {
   params = params || {};
-
-  if (params.videoUrl || params.url) {
+  var direct = String(params.videoUrl || params.url || "").trim();
+  if (huaduPlayableDirectUrl(direct)) {
     return [
       {
         name: "花都影视",
         description: "直接播放地址",
-        url: huaduAssertSafeUrl(String(params.videoUrl || params.url)),
+        url: huaduAssertSafeUrl(direct),
       },
     ];
   }
@@ -1407,6 +1412,7 @@ if (typeof module !== "undefined" && module && module.exports) {
       huaduDecodePlayerUrl: huaduDecodePlayerUrl,
       huaduIsPlaceholderPage: huaduIsPlaceholderPage,
       huaduParseCards: huaduParseCards,
+      huaduPlayableDirectUrl: huaduPlayableDirectUrl,
     };
   } catch (error) {
     // 某些沙箱可能禁止导出，忽略即可

@@ -262,6 +262,25 @@ test("详情网页 URL 不得作为直链误交播放器；从剧集 link 继续
   assert.strictEqual(resources[0].url, "https://cdn.example/episode-2.m3u8?sig=fresh");
 });
 
+test("详情网页 videoUrl 也不得绕过剧集 playback API", async function () {
+  const { api, calls } = loadModule({
+    post: async () => ({
+      statusCode: 200,
+      data: {
+        status: 1,
+        data: { id: "123", ep: 3, manifest_method: "GET", streams: { main: "https://cdn.example/episode-3.m3u8" } },
+      },
+    }),
+  });
+  const resources = await api.loadResource({
+    videoUrl: "https://huangguoai.com/video/123/",
+    link: "hg://detail/123/?ep=3",
+  });
+  assert.strictEqual(calls.posts.length, 1);
+  assert.match(calls.posts[0].url, /\/api\/videos\/123\/episodes\/3\/playback$/);
+  assert.strictEqual(resources[0].url, "https://cdn.example/episode-3.m3u8");
+});
+
 test("仅将明确的媒体扩展名 URL 作为直链播放", async function () {
   const { api, calls } = loadModule();
   const mediaUrl = "https://cdn.example/video.mp4?token=fresh";

@@ -638,6 +638,33 @@ test("播放：player_data.url 两步解码为 m3u8", async function () {
   assert.ok(playCall.url.indexOf("27916-1-1.html") >= 0, playCall.url);
 });
 
+test("播放：详情网页 params.url 不得绕过播放页解析", async function () {
+  const runtime = createWidget({
+    routes: {
+      "/js/config.js": { statusCode: 200, data: CONFIG_JS },
+      "/index.php/vodplay/27916-1-1.html": { statusCode: 200, data: PLAY_HTML },
+    },
+  });
+  const api = loadModule(runtime.widget).api;
+  const resources = await api.loadResource({
+    url: "https://mt9vi.hdys00.com/index.php/voddetail30741.html",
+    link: "huadu://vod/27916",
+  });
+  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources[0].url, M3U8);
+  assert.ok(runtime.state.calls.some((call) => /vodplay\/27916-1-1\.html/.test(call.url)));
+});
+
+test("播放：明确的 m3u8 params.url 保留直链行为", async function () {
+  const runtime = createWidget({});
+  const api = loadModule(runtime.widget).api;
+  const url = "https://mt9vi.hdys00.com/videos/video.m3u8?token=fresh";
+  const resources = await api.loadResource({ url: url });
+  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources[0].url, url);
+  assert.strictEqual(runtime.state.calls.length, 0);
+});
+
 test("播放：缺失播放页返回空数组（真实不存在，不抛异常）", async function () {
   const runtime = createWidget({
     routes: {

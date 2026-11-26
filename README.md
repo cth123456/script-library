@@ -16,10 +16,10 @@
 ### 花都影视（Huadu）
 
 - 文件：[`forward-widgets/huadu/huadu.js`](forward-widgets/huadu/huadu.js)
-- 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（35 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
+- 离线夹具测试：[`forward-widgets/huadu/tests/offline.test.js`](forward-widgets/huadu/tests/offline.test.js)（37 项，不联网）、公共夹具 [`tests/harness.js`](forward-widgets/huadu/tests/harness.js)
 - 现网抽样（人工执行）：[`forward-widgets/huadu/tests/live-smoke.test.js`](forward-widgets/huadu/tests/live-smoke.test.js)
 - 类型：ForwardWidget 视频模块
-- 版本：`1.0.10`
+- 版本：`1.0.11`
 - 数据来源：站点自带 JSON 接口（列表/分类）+ SSR 详情页与播放页；不使用首页推荐 HTML
 - 功能：最新更新、分类浏览（16 个分类）、分页（站点上限 20 页 × 20 条）、搜索（搜索页为主，suggest 为降级并对死链做存活校验）、详情、m3u8 播放资源
 - 稳定性：从发布页 `js/config.js` 自动发现入口（纯文本解析，不使用 `eval`，支持 `"https://" + p + ".domain"` 动态拼接）、候选清单缓存、`lastGood` 记忆、同域重试、失败域 10 分钟冷却、内置候选域兜底；错误按类型区分，不把失败伪装成空数组
@@ -31,11 +31,22 @@
 
 - 文件：[`forward-widgets/huangguo/huangguo.js`](forward-widgets/huangguo/huangguo.js)
 - 离线回归：[`forward-widgets/huangguo/tests/offline.test.js`](forward-widgets/huangguo/tests/offline.test.js)
-- 版本：`0.1.7`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
+- Worker 回归：[`forward-widgets/huangguo/tests/cover-worker.test.cjs`](forward-widgets/huangguo/tests/cover-worker.test.cjs)
+- 版本：`0.1.8`，模块 ID 沿用 `HuangGuo.DuanJu_TuT`
 - 播放：详情只读剧集清单；用户选择剧集后请求 `/api/videos/{id}/episodes/{ep}/playback`。只把明确的媒体 URL 当直链；详情网页 URL 仍从剧集身份请求新签名 HLS。每个主流同时提供系统与 App 播放器选项
 - 分类：AI 换脸与 AI 魔改页面当前返回 HTTP 410，专题 `mingxing-huanlian` 与 `magic-drama` 也返回 410；新版本隐藏这些已下线入口，保留仍可访问的 AI 短剧、AI 漫剧、专题与榜单
-- 封面：优先使用站点官方 `new2.qnlycc.cn` WebP 镜像并本地解密；列表内联封面总量限制为 2 MiB、详情只携带一份封面，避免大 JSON 结果被宿主桥接丢弃。失效的旧 `hg_cover_worker` 自动清除
+- 封面：客户端 HTTPS 图片路径使用 `forward-widgets/huangguo/worker/huangguo-cover-worker.js`；本地 data URL 仅作回退，列表内联总量限制为 2 MiB。详见下方 Worker 部署说明
 - 参考：Rex 加密格式说明见 [rex-widget-libs](https://github.com/baranwang/rex-widget-libs)；加密模块检查工具为 [rex-decrypt](https://rex-decrypt.pages.dev/)，不作为模块运行依赖
+
+#### 黄果封面 Worker 部署
+
+在已登录 Cloudflare 的终端部署：
+
+```sh
+npx wrangler deploy forward-widgets/huangguo/worker/huangguo-cover-worker.js --name huangguo-cover
+```
+
+部署后在黄果模块的 `coverWorker` 全局参数填入 `https://<worker-name>.<account>.workers.dev/?u=`。Worker 仅代理黄果图床白名单域，并将 AES 加密图片解密后以带 CORS 的 HTTPS 图片响应返回。
 
 ## Userscripts
 
