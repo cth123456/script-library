@@ -238,6 +238,39 @@ test("播放接口瞬时失败时自动重试一次", async function () {
   assert.strictEqual(resources[0].url, "https://cdn.example/retry.m3u8");
 });
 
+test("详情网页 URL 不得作为直链误交播放器；从剧集 link 继续解析", async function () {
+  const response = {
+    statusCode: 200,
+    data: {
+      status: 1,
+      data: {
+        id: "123",
+        ep: 2,
+        manifest_method: "GET",
+        streams: { main: "https://cdn.example/episode-2.m3u8?sig=fresh" },
+        cdn: { otherEnabled: false },
+      },
+    },
+  };
+  const { api, calls } = loadModule({ post: async () => response });
+  const resources = await api.loadResource({
+    url: "https://huangguoai.com/video/123/",
+    link: "hg://detail/123/?cover=https%3A%2F%2Fpic.example%2Fcover.jpg&ep=2",
+  });
+  assert.strictEqual(calls.posts.length, 1, "详情网页 URL 不应绕过 playback API");
+  assert.match(calls.posts[0].url, /\/api\/videos\/123\/episodes\/2\/playback$/);
+  assert.strictEqual(resources[0].url, "https://cdn.example/episode-2.m3u8?sig=fresh");
+});
+
+test("仅将明确的媒体扩展名 URL 作为直链播放", async function () {
+  const { api, calls } = loadModule();
+  const mediaUrl = "https://cdn.example/video.mp4?token=fresh";
+  const resources = await api.loadResource({ url: mediaUrl });
+  assert.strictEqual(calls.posts.length, 0);
+  assert.strictEqual(resources.length, 1);
+  assert.strictEqual(resources[0].url, mediaUrl);
+});
+
 // 站点封面为 AES-128-CBC / NoPadding 密文；用同一公开 key/IV 造夹具。
 function encryptCover(payloadBytes) {
   const key = Buffer.from("f5d965df75336270", "utf8");

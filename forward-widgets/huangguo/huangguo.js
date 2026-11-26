@@ -3,7 +3,7 @@ WidgetMetadata = {
   title: "黄果短剧",
   description: "黄果短剧列表、分类、搜索、详情及按集实时取播放地址。",
   author: "Codex",
-  version: "0.1.6",
+  version: "0.1.7",
   requiredVersion: "0.0.1",
   detailCacheDuration: 0,
   site: "https://huangguoai.com",
@@ -713,6 +713,11 @@ function hgParseDetailLink(value) {
   return { id: id, cover: cover };
 }
 
+function hgPlayableDirectUrl(value) {
+  var text = String(value || "").trim();
+  return /^https:\/\//i.test(text) && /\.(?:m3u8|mp4|m4v|mov|mkv|mpd|flv)(?:[?#]|$)/i.test(text);
+}
+
 function hgExtractVideoData(html) {
   var match = String(html || "").match(/<script\b[^>]*id=["']videoInitialData["'][^>]*>([\s\S]*?)<\/script>/i);
   if (!match) return null;
@@ -781,24 +786,49 @@ async function loadDetail(link) {
 }
 
 function hgResourceIdentity(params) {
-  var link = String((params && (params.link || params.id)) || "");
+  params = params || {};
+  var sources = [params.link, params.id, params.videoLink, params.parentLink];
+  var link = "";
   var detail = hgParseDetailLink(link);
-  if (!detail) {
-    var web = link.match(/\/video\/(\d+)\/(?:ep-(\d+)\/?)?/i);
-    if (web) detail = { id: web[1], cover: "" };
+  for (var i = 0; i < sources.length && !detail; i++) {
+    link = String(sources[i] || "");
+    detail = hgParseDetailLink(link);
+    if (!detail) {
+      var web = link.match(/\/video\/(\d+)\/(?:ep-(\d+)\/?)?/i);
+      if (web) detail = { id: web[1], cover: "" };
+    }
   }
-  if (!detail && params) detail = hgParseDetailLink(params.videoLink || params.parentLink);
   if (!detail) return null;
-  var epMatch = link.match(/[?&]ep=(\d+)/i);
-  var episode = Number((params && (params.episodeNumber || params.ep || params.episode)) || (epMatch && epMatch[1]) || 1);
+  var episode = 0;
+  var episodeValues = [params.episodeNumber, params.ep, params.episode];
+  for (var e = 0; e < episodeValues.length && !episode; e++) {
+    var episodeValue = episodeValues[e];
+    var numericEpisode = Number(episodeValue);
+    if (Number.isInteger(numericEpisode) && numericEpisode > 0) episode = numericEpisode;
+    else {
+      var episodeText = String(episodeValue || "").match(/(?:ep|episode|第)?\s*(\d+)\s*(?:集)?/i);
+      if (episodeText) episode = Number(episodeText[1]);
+    }
+  }
+  if (!episode) {
+    for (var j = 0; j < sources.length && !episode; j++) {
+      var epMatch = String(sources[j] || "").match(/[?&]ep=(\d+)/i) || String(sources[j] || "").match(/\/ep-(\d+)(?:\/|$)/i);
+      if (epMatch) episode = Number(epMatch[1]);
+    }
+  }
+  if (!episode) episode = 1;
   if (!Number.isInteger(episode) || episode < 1) episode = 1;
   return { id: detail.id, episode: episode, referer: HUANGGUO_SITE + "/video/" + detail.id + "/" };
 }
 
 async function loadResource(params) {
   params = params || {};
-  var direct = String(params.videoUrl || params.url || "");
-  if (direct && /^https:\/\//i.test(direct)) {
+  var directVideoUrl = String(params.videoUrl || "").trim();
+  var directUrl = String(params.url || "").trim();
+  var direct = directVideoUrl && /^https:\/\//i.test(directVideoUrl)
+    ? directVideoUrl
+    : hgPlayableDirectUrl(directUrl) ? directUrl : "";
+  if (direct) {
     var directHeaders = {};
     if (params.customHeaders && typeof params.customHeaders === "object") {
       for (var headerName in params.customHeaders) directHeaders[headerName] = String(params.customHeaders[headerName]);
